@@ -8,18 +8,19 @@ Prototype.LegacySelector = Class.create({
 
     if (this.shouldUseSelectorsAPI()) {
       this.mode = 'selectorsAPI';
+      this.findElements = this.findElementsSAPI;
     } else if (this.shouldUseXPath()) {
       this.mode = 'xpath';
       this.compileXPathMatcher();
+      this.findElements = this.findElementsXPath;
     } else {
       this.mode = "normal";
       this.compileMatcher();
+      this.findElements = this.findElementsNormal;
     }
-
   },
 
   shouldUseXPath: (function() {
-
     // Some versions of Opera 9.x produce incorrect results when using XPath
     // with descendant combinators.
     // see: http://opera.remcol.ath.cx/bugs/index.php?action=bug&id=652
@@ -47,8 +48,7 @@ Prototype.LegacySelector = Class.create({
       var e = this.expression;
 
       // Safari 3 chokes on :*-of-type and :empty
-      if (Prototype.Browser.WebKit &&
-       (e.include("-of-type") || e.include(":empty")))
+      if (Prototype.Browser.WebKit && (e.include("-of-type") || e.include(":empty")))
         return false;
 
       // XPath can't do namespaced attributes, nor can it read
@@ -59,8 +59,7 @@ Prototype.LegacySelector = Class.create({
       if (IS_DESCENDANT_SELECTOR_BUGGY) return false;
 
       return true;
-    }
-
+    };
   })(),
 
   shouldUseSelectorsAPI: function() {
@@ -68,12 +67,17 @@ Prototype.LegacySelector = Class.create({
 
     if (Prototype.LegacySelector.CASE_INSENSITIVE_CLASS_NAMES) return false;
 
+    var expr = this.expression;
+
+    // FIX Opera 10.x ignores :enabled
+    if (Prototype.Browser.Opera && expr.include(":enabled")) return false;
+
     if (!Prototype.LegacySelector._div) Prototype.LegacySelector._div = new Element('div');
 
     // Make sure the browser treats the selector as valid. Test on an
     // isolated element to minimize cost of this check.
     try {
-      Prototype.LegacySelector._div.querySelector(this.expression);
+      Prototype.LegacySelector._div.querySelector(expr);
     } catch(e) {
       return false;
     }
@@ -82,8 +86,8 @@ Prototype.LegacySelector = Class.create({
   },
 
   compileMatcher: function() {
-    var e = this.expression, ps = Prototype.LegacySelector.patterns, h = Prototype.LegacySelector.handlers,
-        c = Prototype.LegacySelector.criteria, le, p, m, len = ps.length, name;
+    var e = this.expression, ps = Prototype.LegacySelector.patterns,
+        c = Prototype.LegacySelector.criteria, le, m, len = ps.length, name;
 
     if (Prototype.LegacySelector._cache[e]) {
       this.matcher = Prototype.LegacySelector._cache[e];
@@ -95,10 +99,9 @@ Prototype.LegacySelector = Class.create({
 
     while (e && le != e && (/\S/).test(e)) {
       le = e;
-      for (var i = 0; i<len; i++) {
-        p = ps[i].re;
+      for (var i = 0; i < len; i++) {
         name = ps[i].name;
-        if (m = e.match(p)) {
+        if (m = e.match(ps[i].re)) {
           this.matcher.push(Object.isFunction(c[name]) ? c[name](m) :
             new Template(c[name]).evaluate(m));
           e = e.replace(m[0], '');
@@ -123,7 +126,7 @@ Prototype.LegacySelector = Class.create({
     this.matcher = ['.//*'];
     while (e && le != e && (/\S/).test(e)) {
       le = e;
-      for (var i = 0; i<len; i++) {
+      for (var i = 0; i < len; i++) {
         name = ps[i].name;
         if (m = e.match(ps[i].re)) {
           this.matcher.push(Object.isFunction(x[name]) ? x[name](m) :
@@ -138,49 +141,49 @@ Prototype.LegacySelector = Class.create({
     Prototype.LegacySelector._cache[this.expression] = this.xpath;
   },
 
-  findElements: function(root) {
+  findElementsSAPI: function(root) {
     root = root || document;
-    var e = this.expression, results;
-
-    switch (this.mode) {
-      case 'selectorsAPI':
-        // querySelectorAll queries document-wide, then filters to descendants
-        // of the context element. That's not what we want.
-        // Add an explicit context to the selector if necessary.
-        if (root !== document) {
-          var oldId = root.id, id = $(root).identify();
-          // Escape special characters in the ID.
-          id = id.replace(/([\.:])/g, "\\$1");
-          e = "#" + id + " " + e;
-        }
-
-        results = $A(root.querySelectorAll(e)).map(Element.extend);
-        root.id = oldId;
-
-        return results;
-      case 'xpath':
-        return document._getElementsByXPath(this.xpath, root);
-      default:
-       return this.matcher(root);
+    var e = this.expression, results, oldId;
+    // querySelectorAll queries document-wide, then filters to descendants
+    // of the context element. That's not what we want.
+    // Add an explicit context to the selector if necessary.
+    if (root !== document) {
+      oldId = root.id;
+      // Escape special characters in the ID.
+      var id = Element.identify(root).replace(/([\.:])/g, "\\$1");
+      e = "#" + id + " " + e;
     }
+
+    results = $A(root.querySelectorAll(e)).map(Element.extend);
+    if (oldId) {
+      root.id = oldId;
+    } else if (root.removeAttribute) {
+      root.removeAttribute("id");
+    }
+    return results;
   },
 
-  match: function(element) {
-    this.tokens = [];
+  findElementsXPath: function(root) {
+    return document._getElementsByXPath(this.xpath, root || document);
+  },
 
-    var e = this.expression, ps = Prototype.LegacySelector.patterns, as = Prototype.LegacySelector.assertions;
-    var le, p, m, len = ps.length, name;
+  findElementsNormal: function(root) {
+    return this.matcher(root || document);
+  },
+
+  match: function(element) { // FIX
+    var e = this.expression, ps = Prototype.LegacySelector.patterns,
+        as = Prototype.LegacySelector.assertions, le, m, len = ps.length, name, match = true;
 
     while (e && le !== e && (/\S/).test(e)) {
       le = e;
-      for (var i = 0; i<len; i++) {
-        p = ps[i].re;
+      for (var i = 0; i < len; i++) {
         name = ps[i].name;
-        if (m = e.match(p)) {
+        if (m = e.match(ps[i].re)) {
           // use the Prototype.LegacySelector.assertions methods unless the selector
           // is too complex.
           if (as[name]) {
-            this.tokens.push([name, Object.clone(m)]);
+            match = match && as[name](element, m);
             e = e.replace(m[0], '');
           } else {
             // reluctantly do a document-wide search
@@ -188,14 +191,6 @@ Prototype.LegacySelector = Class.create({
             return this.findElements(document).include(element);
           }
         }
-      }
-    }
-
-    var match = true, name, matches;
-    for (var i = 0, token; token = this.tokens[i]; i++) {
-      name = token[0], matches = token[1];
-      if (!Prototype.LegacySelector.assertions[name](element, matches)) {
-        match = false; break;
       }
     }
 
@@ -231,6 +226,7 @@ if (Prototype.BrowserFeatures.SelectorsAPI &&
 
 Object.extend(Prototype.LegacySelector, {
   _cache: { },
+  _selectorsCache: { },
 
   xpath: {
     descendant:   "//*",
@@ -256,8 +252,7 @@ Object.extend(Prototype.LegacySelector, {
     pseudo: function(m) {
       var h = Prototype.LegacySelector.xpath.pseudos[m[1]];
       if (!h) return '';
-      if (Object.isFunction(h)) return h(m);
-      return new Template(Prototype.LegacySelector.xpath.pseudos[m[1]]).evaluate(m);
+      return Object.isFunction(h)? h(m) : new Template(h).evaluate(m);
     },
     operators: {
       '=':  "[@#{1}='#{3}']",
@@ -274,8 +269,8 @@ Object.extend(Prototype.LegacySelector, {
       'only-child':  '[not(preceding-sibling::* or following-sibling::*)]',
       'empty':       "[count(*) = 0 and (count(text()) = 0)]",
       'checked':     "[@checked]",
-      'disabled':    "[(@disabled) and (@type!='hidden')]",
-      'enabled':     "[not(@disabled) and (@type!='hidden')]",
+      'disabled':    "[(@disabled) and (not(@type) or @type!='hidden')]", // FIX for [(@disabled) and (@type!='hidden')]
+      'enabled':     "[not(@disabled) and (not(@type) or @type!='hidden')]", // FIX for [not(@disabled) and (@type!='hidden')]
       'not': function(m) {
         var e = m[6], p = Prototype.LegacySelector.patterns,
             x = Prototype.LegacySelector.xpath, le, v, len = p.length, name;
@@ -283,7 +278,7 @@ Object.extend(Prototype.LegacySelector, {
         var exclusion = [];
         while (e && le != e && (/\S/).test(e)) {
           le = e;
-          for (var i = 0; i<len; i++) {
+          for (var i = 0; i < len; i++) {
             name = p[i].name;
             if (m = e.match(p[i].re)) {
               v = Object.isFunction(x[name]) ? x[name](m) : new Template(x[name]).evaluate(m);
@@ -324,12 +319,14 @@ Object.extend(Prototype.LegacySelector, {
           return '[' + fragment + "= " + mm[1] + ']';
         if (mm = formula.match(/^(-?\d*)?n(([+-])(\d+))?/)) { // an+b
           if (mm[1] == "-") mm[1] = -1;
-          var a = mm[1] ? Number(mm[1]) : 1;
-          var b = mm[2] ? Number(mm[2]) : 0;
+          var obj = {
+            fragment: fragment,
+            a: mm[1] ? Number(mm[1]) : 1,
+            b: mm[2] ? Number(mm[2]) : 0
+          };
           predicate = "[((#{fragment} - #{b}) mod #{a} = 0) and " +
           "((#{fragment} - #{b}) div #{a} >= 0)]";
-          return new Template(predicate).evaluate({
-            fragment: fragment, a: a, b: b });
+          return new Template(predicate).evaluate(obj);
         }
       }
     }
@@ -373,8 +370,9 @@ Object.extend(Prototype.LegacySelector, {
 
   // for Prototype.LegacySelector.match and Element#match
   assertions: {
-    tagName: function(element, matches) {
-      return matches[1].toUpperCase() == element.tagName.toUpperCase();
+    tagName: function(element, matches) { // FIX
+      //return matches[1].toUpperCase() == element.tagName.toUpperCase();
+      return element.tagName && (matches[1] == '*' || matches[1].toUpperCase() == element.tagName.toUpperCase());
     },
 
     className: function(element, matches) {
@@ -413,7 +411,6 @@ Object.extend(Prototype.LegacySelector, {
     },
 
     unmark: (function(){
-
       // IE improperly serializes _countedByPrototype in (inner|outer)HTML
       // due to node properties being mapped directly to attributes
       var PROPERTIES_ATTRIBUTES_MAP = (function(){
@@ -437,7 +434,7 @@ Object.extend(Prototype.LegacySelector, {
           for (var i = 0, node; node = nodes[i]; i++)
             node._countedByPrototype = void 0;
           return nodes;
-        }
+        };
     })(),
 
     // mark each child node with its position (for nth calls)
@@ -714,8 +711,8 @@ Object.extend(Prototype.LegacySelector, {
     },
 
     'not': function(nodes, selector, root) {
-      var h = Prototype.LegacySelector.handlers, selectorType, m;
-      var exclusions = new Prototype.LegacySelector(selector).findElements(root);
+      var h = Prototype.LegacySelector.handlers, selectorType, m,
+          exclusions = new Prototype.LegacySelector(selector).findElements(root);
       h.mark(exclusions);
       for (var i = 0, results = [], node; node = nodes[i]; i++)
         if (!node._countedByPrototype) results.push(node);
@@ -778,11 +775,13 @@ Object.extend(Prototype.LegacySelector, {
     return Prototype.LegacySelector.matchElements(elements, expression || '*')[index || 0];
   },
 
-  findChildElements: function(element, expressions) {
-    expressions = Prototype.LegacySelector.split(expressions.join(','));
-    var results = [], h = Prototype.LegacySelector.handlers;
+  findChildElements: function(element, expressions) { // FIX
+    var ls = Prototype.LegacySelector, results = [], h = ls.handlers;
+    expressions = ls.split(expressions.join(','));
     for (var i = 0, l = expressions.length, selector; i < l; i++) {
-      selector = new Prototype.LegacySelector(expressions[i].strip());
+      var expression = expressions[i].strip();
+      selector = ls._selectorsCache[expression] || new Prototype.LegacySelector(expression);
+      ls._selectorsCache[expression] = selector;
       h.concat(results, selector.findElements(element));
     }
     return (l > 1) ? h.unique(results) : results;
