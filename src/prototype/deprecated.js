@@ -1,36 +1,9 @@
 /*------------------------------- DEPRECATED -------------------------------*/
-
-Hash.toQueryString = Object.toQueryString;
-
-var Toggle = { display: Element.toggle };
-
-Element.Methods.childOf = Element.Methods.descendantOf;
-
-var Insertion = {
-  Before: function(element, content) {
-    return Element.insert(element, {before:content});
-  },
-
-  Top: function(element, content) {
-    return Element.insert(element, {top:content});
-  },
-
-  Bottom: function(element, content) {
-    return Element.insert(element, {bottom:content});
-  },
-
-  After: function(element, content) {
-    return Element.insert(element, {after:content});
-  }
-};
-
-var $continue = new Error('"throw $continue" is deprecated, use "return" instead');
-
 // This should be moved to script.aculo.us; notice the deprecated methods
 // further below, that map to the newer Element methods.
 var Position = {
   // set to true if needed, warning: firefox performance problems
-  // NOT neeeded for page scrolling, only if draggable contained in
+  // NOT needed for page scrolling, only if draggable contained in
   // scrollable elements
   includeScrollOffsets: false,
 
@@ -108,8 +81,7 @@ var Position = {
   page: Element.Methods.viewportOffset,
 
   clone: function(source, target, options) {
-    options = options || { };
-    return Element.clonePosition(target, source, options);
+    return Element.clonePosition(target, source, options || {});
   }
 };
 
@@ -150,41 +122,6 @@ if (!document.getElementsByClassName) document.getElementsByClassName = function
 
 /*--------------------------------------------------------------------------*/
 
-Element.ClassNames = Class.create();
-Element.ClassNames.prototype = {
-  initialize: function(element) {
-    this.element = $(element);
-  },
-
-  _each: function(iterator, context) {
-    this.element.className.split(/\s+/).select(function(name) {
-      return name.length > 0;
-    })._each(iterator, context);
-  },
-
-  set: function(className) {
-    this.element.className = className;
-  },
-
-  add: function(classNameToAdd) {
-    if (this.include(classNameToAdd)) return;
-    this.set($A(this).concat(classNameToAdd).join(' '));
-  },
-
-  remove: function(classNameToRemove) {
-    if (!this.include(classNameToRemove)) return;
-    this.set($A(this).without(classNameToRemove).join(' '));
-  },
-
-  toString: function() {
-    return $A(this).join(' ');
-  }
-};
-
-Object.extend(Element.ClassNames.prototype, Enumerable);
-
-/*--------------------------------------------------------------------------*/
-
 /** deprecated, section: DOM
  *  class Selector
  *
@@ -202,7 +139,7 @@ Object.extend(Element.ClassNames.prototype, Enumerable);
     initialize: function(expression) {
       this.expression = expression.strip();
     },
-  
+
     /** deprecated
      *  Selector#findElements(root) -> [Element...]
      *  - root (Element | document): A "scope" to search within. All results will
@@ -214,7 +151,7 @@ Object.extend(Element.ClassNames.prototype, Enumerable);
     findElements: function(rootElement) {
       return Prototype.Selector.select(this.expression, rootElement);
     },
-  
+
     /** deprecated
      *  Selector#match(element) -> Boolean
      *
@@ -223,11 +160,11 @@ Object.extend(Element.ClassNames.prototype, Enumerable);
     match: function(element) {
       return Prototype.Selector.match(element, this.expression);
     },
-  
+
     toString: function() {
       return this.expression;
     },
-  
+
     inspect: function() {
       return "#<Selector: " + this.expression + ">";
     }
@@ -244,7 +181,7 @@ Object.extend(Element.ClassNames.prototype, Enumerable);
     matchElements: function(elements, expression) {
       var match = Prototype.Selector.match,
           results = [];
-          
+
       for (var i = 0, length = elements.length; i < length; i++) {
         var element = elements[i];
         if (match(element, expression)) {
