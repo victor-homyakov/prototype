@@ -9,8 +9,8 @@
  *  inheritance](http://prototypejs.org/learn/class-inheritance).
 **/
 var Class = (function() {
-  
-  // Some versions of JScript fail to enumerate over properties, names of which 
+
+  // Some versions of JScript fail to enumerate over properties, names of which
   // correspond to non-enumerable properties in the prototype chain
   var IS_DONTENUM_BUGGY = (function(){
     for (var p in { toString: 1 }) {
@@ -19,7 +19,7 @@ var Class = (function() {
     }
     return true;
   })();
-  
+
   /**
    *  Class.create([superclass][, methods...]) -> Class
    *    - superclass (Class): The optional superclass to inherit methods from.
@@ -50,7 +50,7 @@ var Class = (function() {
    *  [inheritance tutorial](http://prototypejs.org/learn/class-inheritance)
    *  on the Prototype website.
   **/
-  function subclass() {};
+  function Subclass() {}
   function create() {
     var parent = null, properties = $A(arguments);
     if (Object.isFunction(properties[0]))
@@ -65,8 +65,8 @@ var Class = (function() {
     klass.subclasses = [];
 
     if (parent) {
-      subclass.prototype = parent.prototype;
-      klass.prototype = new subclass;
+      Subclass.prototype = parent.prototype;
+      klass.prototype = new Subclass;
       parent.subclasses.push(klass);
     }
 
@@ -168,8 +168,21 @@ var Class = (function() {
           return function() { return ancestor[m].apply(this, arguments); };
         })(property).wrap(method);
 
-        value.valueOf = method.valueOf.bind(method);
-        value.toString = method.toString.bind(method);
+        // We used to use `bind` to ensure that `toString` and `valueOf`
+        // methods were called in the proper context, but now that we're
+        // relying on native bind and/or an existing polyfill, we can't rely
+        // on the nuanced behavior of whatever `bind` implementation is on
+        // the page.
+        //
+        // MDC's polyfill, for instance, doesn't like binding functions that
+        // haven't got a `prototype` property defined.
+        value.valueOf = (function(method) {
+          return function() { return method.valueOf.call(method); };
+        })(method);
+
+        value.toString = (function(method) {
+          return function() { return method.toString.call(method); };
+        })(method);
       }
       this.prototype[property] = value;
     }

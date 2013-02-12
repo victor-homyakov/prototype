@@ -52,6 +52,12 @@ Object.extend(Function.prototype, (function() {
    *  function is called, it will call the original ensuring that `this` is set
    *  to `context`. Also optionally curries arguments for the function.
    *
+   *  `Function#bind` acts as an ECMAScript 5 [polyfill](http://remysharp.com/2010/10/08/what-is-a-polyfill/).
+   *  It is only defined if not already present in the user's browser, and it
+   *  is meant to behave like the native version as much as possible. Consult
+   *  the [ES5 specification](http://es5.github.com/#x15.3.4.5) for more
+   *  information.
+   *
    *  ##### Examples
    *
    *  A typical use of [[Function#bind]] is to ensure that a callback (event
@@ -105,26 +111,34 @@ Object.extend(Function.prototype, (function() {
    *
    *  (To curry without binding, see [[Function#curry]].)
   **/
-
   function bind(context) {
     if (arguments.length < 2 && Object.isUndefined(arguments[0]))
       return this;
 
     if (!Object.isFunction(this))
       throw new TypeError("The object is not callable.");
-      
+
     var nop = function() {};
     var __method = this, args = slice.call(arguments, 1);
-    
-    var bound = function() {
-      var a = merge(args, arguments);
-      var c = this instanceof nop ? this : context || window;
+
+    var bound = args.length ? function() { // FIX
+      var a = arguments.length ? merge(args, arguments) : args;
+      // Ignore the supplied context when the bound function is called with
+      // the "new" keyword.
+      var c = this instanceof bound ? this : context;
       return __method.apply(c, a);
-    }
-    
-    nop.prototype = this.prototype;
+    } : function() {
+      var c = this instanceof bound ? this : context;
+      return __method.apply(c, arguments);
+    };
+
+    nop.prototype   = this.prototype;
     bound.prototype = new nop();
-    
+
+    bound.toString = function() { // FIX for debugger
+      return __method.toString();
+    };
+
     return bound;
   }
 
@@ -185,10 +199,12 @@ Object.extend(Function.prototype, (function() {
   **/
   function bindAsEventListener(context) {
     var __method = this, args = slice.call(arguments, 1);
-    return function(event) {
+    return args.length ? function(event) {
       var a = update([event || window.event], args);
       return __method.apply(context, a);
-    }
+    } : function(event) {
+      return __method.call(context, event || window.event);
+    };
   }
 
   /**
@@ -202,7 +218,7 @@ Object.extend(Function.prototype, (function() {
    *      function showArguments() {
    *        alert($A(arguments).join(', '));
    *      }
-   *      showArguments(1, 2,, 3);
+   *      showArguments(1, 2, 3);
    *      // -> alerts "1, 2, 3"
    *
    *      var f = showArguments.curry(1, 2, 3);
@@ -219,9 +235,9 @@ Object.extend(Function.prototype, (function() {
     if (!arguments.length) return this;
     var __method = this, args = slice.call(arguments, 0);
     return function() {
-      var a = merge(args, arguments);
+      var a = arguments.length ? merge(args, arguments) : args; // FIX
       return __method.apply(this, a);
-    }
+    };
   }
 
   /**
@@ -281,9 +297,10 @@ Object.extend(Function.prototype, (function() {
    *      // Alerts "One", then "Three", then (after a brief pause) "Two"
    *      // Note that "Three" happens before "Two"
   **/
-  function defer() {
-    var args = update([0.01], arguments);
-    return this.delay.apply(this, args);
+  function defer() { // FIX
+    return arguments.length
+      ? this.delay.apply(this, update([0.01], arguments))
+      : this.delay(0.01);
   }
 
   /**
@@ -329,9 +346,9 @@ Object.extend(Function.prototype, (function() {
   function wrap(wrapper) {
     var __method = this;
     return function() {
-      var a = update([__method.bind(this)], arguments);
+      var a = arguments.length ? update([__method.bind(this)], arguments) : [__method.bind(this)]; // FIX
       return wrapper.apply(this, a);
-    }
+    };
   }
 
   /**
@@ -386,20 +403,24 @@ Object.extend(Function.prototype, (function() {
     if (this._methodized) return this._methodized;
     var __method = this;
     return this._methodized = function() {
-      var a = update([this], arguments);
+      var a = arguments.length ? update([this], arguments) : [this]; // FIX
       return __method.apply(null, a);
     };
   }
 
-  return {
+  var extensions = {
     argumentNames:       argumentNames,
-    bind:                bind,
     bindAsEventListener: bindAsEventListener,
     curry:               curry,
     delay:               delay,
     defer:               defer,
     wrap:                wrap,
     methodize:           methodize
-  }
+  };
+
+  if (!Function.prototype.bind)
+    extensions.bind = bind;
+
+  return extensions;
 })());
 

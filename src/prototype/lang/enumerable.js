@@ -5,7 +5,7 @@
  *  objects that act as collections of values. It is a cornerstone of
  *  Prototype.
  *
- *  [[Enumerable]] is a _mixin_: a set of methods intended not for standaone
+ *  [[Enumerable]] is a _mixin_: a set of methods intended not for standalone
  *  use, but for incorporation into other objects.
  *
  *  Prototype mixes [[Enumerable]] into several classes. The most visible cases
@@ -30,6 +30,41 @@
  *
  *  If there is no `context` argument, the iterator function will execute in
  *  the scope from which the [[Enumerable]] method itself was called.
+ *
+ *  ##### Flow control
+ *
+ *  You might find yourself missing the `break` and `continue` keywords that
+ *  are available in ordinary `for` loops. If you need to break out of an
+ *  enumeration before it's done, you can throw a special object named
+ *  `$break`:
+ *
+ *      var myObject = {};
+ *
+ *      ['foo', 'bar', 'baz', 'thud'].each( function(name, index) {
+ *        if (name === 'baz') throw $break;
+ *        myObject[name] = index;
+ *      });
+ *
+ *      myObject;
+ *      // -> { foo: 0, bar: 1 }
+ *
+ *  Though we're technically throwing an exception, the `each` method knows
+ *  to catch a thrown `$break` object and treat it as a command to stop
+ *  iterating. (_Any_ exception thrown within an iterator will stop
+ *  iteration, but only `$break` will be caught and suppressed.)
+ *
+ *  If you need `continue`-like behavior, you can simply return early from
+ *  your iterator:
+ *
+ *      var myObject = {};
+ *
+ *      ['foo', 'bar', 'baz', 'thud'].each( function(name, index) {
+ *        if (name === 'baz') return;
+ *        myObject[name] = index;
+ *      });
+ *
+ *      myObject;
+ *      // -> { foo: 0, bar: 1, thud: 3 }
  *
  *  ##### Mixing [[Enumerable]] into your own objects
  *
@@ -84,6 +119,9 @@
 var $break = { };
 
 var Enumerable = (function() {
+
+  var slice = Array.prototype.slice;
+
   /**
    *  Enumerable#each(iterator[, context]) -> Enumerable
    *  - iterator (Function): A `Function` that expects an item in the
@@ -367,8 +405,8 @@ var Enumerable = (function() {
    *      // -> true ('3' == 3)
   **/
   function include(object) {
-    if (Object.isFunction(this.indexOf))
-      if (this.indexOf(object) != -1) return true;
+    if (Object.isFunction(this.indexOf) && this.indexOf(object) != -1)
+      return true;
 
     var found = false;
     this.each(function(value) {
@@ -471,11 +509,12 @@ var Enumerable = (function() {
    *      // -> Stops observing the 'change' event on all input elements,
    *      // returns an array of the element references.
   **/
-  function invoke(method) {
-    var args = $A(arguments).slice(1);
-    return this.map(function(value) {
-      return value[method].apply(value, args);
-    });
+  function invoke(method) { // FIX
+    var args = slice.call(arguments, 1);
+    var fn = args.length
+      ? function(value) { return value[method].apply(value, args); }
+      : function(value) { return value[method](); };
+    return this.map(fn);
   }
 
   /** related to: Enumerable#min
