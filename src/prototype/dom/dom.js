@@ -1,13 +1,13 @@
 (function(GLOBAL) {
-  
+
   var UNDEFINED;
   var SLICE = Array.prototype.slice;
-  
+
   // Try to reuse the same created element as much as possible. We'll use
   // this DIV for capability checks (where possible) and for normalizing
   // HTML content.
   var DIV = document.createElement('div');
-  
+
   /** section: DOM
    * class Element
   **/
@@ -32,15 +32,15 @@
    *  The [[$]] function is the cornerstone of Prototype. Not only does it
    *  provide a handy alias for `document.getElementById`, it also lets you pass
    *  indifferently IDs (strings) or DOM node references to your functions:
-   *  
+   *
    *      function foo(element) {
    *          element = $(element);
    *          //  rest of the function...
    *      }
-   *  
+   *
    *  Code written this way is flexible — you can pass it the ID of the element
    *  or the element itself without any type sniffing.
-   *  
+   *
    *  Invoking it with only one argument returns the [[Element]], while invoking it
    *  with multiple arguments returns an [[Array]] of [[Element]]s (and this
    *  works recursively: if you're twisted, you could pass it an array
@@ -49,24 +49,24 @@
    *  apply: nonexistent IDs will yield `null` and IDs present multiple times in
    *  the DOM will yield erratic results. *If you're assigning the same ID to
    *  multiple elements, you're doing it wrong!*
-   *  
+   *
    *  The function also *extends every returned element* with [[Element.extend]]
    *  so you can use Prototype's DOM extensions on it. In the following code,
    *  the two lines are equivalent. However, the second one feels significantly
    *  more object-oriented:
-   *  
+   *
    *      // Note quite OOP-like...
    *      Element.hide('itemId');
    *      // A cleaner feel, thanks to guaranted extension
    *      $('itemId').hide();
-   *  
+   *
    *  However, when using iterators, leveraging the [[$]] function makes for
    *  more elegant, more concise, and also more efficient code:
-   *  
+   *
    *      ['item1', 'item2', 'item3'].each(Element.hide);
    *      // The better way:
    *      $('item1', 'item2', 'item3').invoke('hide');
-   *  
+   *
    *  See [How Prototype extends the DOM](http://prototypejs.org/learn/extensions)
    *  for more info.
   **/
@@ -76,18 +76,18 @@
         elements.push($(arguments[i]));
       return elements;
     }
-    
+
     if (Object.isString(element))
       element = document.getElementById(element);
     return Element.extend(element);
   }
-  
+
   GLOBAL.$ = $;
-  
-  
+
+
   // Define the DOM Level 2 node type constants if they're missing.
   if (!GLOBAL.Node) GLOBAL.Node = {};
-  
+
   if (!GLOBAL.Node.ELEMENT_NODE) {
     Object.extend(GLOBAL.Node, {
       ELEMENT_NODE:                1,
@@ -104,10 +104,10 @@
       NOTATION_NODE:              12
     });
   }
-  
+
   // The cache for all our created elements.
   var ELEMENT_CACHE = {};
-  
+
   // For performance reasons, we create new elements by cloning a "blank"
   // version of a given element. But sometimes this causes problems. Skip
   // the cache if:
@@ -119,19 +119,19 @@
     if ('type' in attributes) return false;
     return true;
   }
-  
+
   // IE requires that `name` and `type` attributes be set this way.
-  var HAS_EXTENDED_CREATE_ELEMENT_SYNTAX = (function(){
+  var HAS_EXTENDED_CREATE_ELEMENT_SYNTAX = Prototype.Browser.IE && (function(){ // FIX
     try {
       var el = document.createElement('<input name="x">');
       return el.tagName.toLowerCase() === 'input' && el.name === 'x';
-    } 
+    }
     catch(err) {
       return false;
     }
   })();
-  
-  
+
+
   /**
    *  new Element(tagName[, attributes])
    *  - tagName (String): The name of the HTML element to create.
@@ -158,43 +158,43 @@
   function Element(tagName, attributes) {
     attributes = attributes || {};
     tagName = tagName.toLowerCase();
-    
+
     if (HAS_EXTENDED_CREATE_ELEMENT_SYNTAX && attributes.name) {
       tagName = '<' + tagName + ' name="' + attributes.name + '">';
       delete attributes.name;
       return Element.writeAttribute(document.createElement(tagName), attributes);
     }
-    
+
     if (!ELEMENT_CACHE[tagName])
       ELEMENT_CACHE[tagName] = Element.extend(document.createElement(tagName));
-    
+
     var node = shouldUseCreationCache(tagName, attributes) ?
      ELEMENT_CACHE[tagName].cloneNode(false) : document.createElement(tagName);
-     
+
     return Element.writeAttribute(node, attributes);
   }
-  
+
   GLOBAL.Element = Element;
-  
+
   Object.extend(GLOBAL.Element, oldElement || {});
   if (oldElement) GLOBAL.Element.prototype = oldElement.prototype;
-  
+
   /**
    *  mixin Element.Methods
    *
-   *  [[Element.Methods]] is a mixin for DOM elements. The methods of this object 
+   *  [[Element.Methods]] is a mixin for DOM elements. The methods of this object
    *  are accessed through the [[$]] utility or through the [[Element]] object and
    *  shouldn't be accessed directly.
-   *  
+   *
    *  ##### Examples
-   *  
-   *  Hide the element 
-   *  
-   *      $(element).hide(); 
-   *      
+   *
+   *  Hide the element:
+   *
+   *      $(element).hide();
+   *
    *  Return an [[Enumerable]] of all descendant nodes of the element with the id
-   *  "article"
-   *  
+   *  "articles":
+   *
    *      $('articles').descendants();
   **/
   Element.Methods = { ByTag: {}, Simulated: {} };
@@ -202,14 +202,14 @@
   // Temporary object for holding all our initial element methods. We'll add
   // them all at once at the bottom of this file.
   var methods = {};
-  
+
   /**
    *  Element.inspect(@element) -> String
    *
    *  Returns the debug-oriented string representation of `element`.
    *
    *  For more information on `inspect` methods, see [[Object.inspect]].
-   *  
+   *
    *      language: html
    *      <ul>
    *        <li id="golden-delicious">Golden Delicious</li>
@@ -222,40 +222,40 @@
    *
    *      $('golden-delicious').inspect();
    *      // -> '<li id="golden-delicious">'
-   *      
+   *
    *      $('mutsu').inspect();
    *      // -> '<li id="mutsu" class="yummy apple">'
-   *      
+   *
    *      $('mutsu').next().inspect();
    *      // -> '<li>'
-  **/  
+  **/
   var INSPECT_ATTRIBUTES = { id: 'id', className: 'class' };
   function inspect(element) {
     element = $(element);
     var result = '<' + element.tagName.toLowerCase();
-    
-    var attribute;
+
+    var attribute, value;
     for (var property in INSPECT_ATTRIBUTES) {
       attribute = INSPECT_ATTRIBUTES[property];
       value = (element[property] || '').toString();
       if (value) result += ' ' + attribute + '=' + value.inspect(true);
     }
-    
+
     return result + '>';
   }
-  
+
   methods.inspect = inspect;
-  
-  // VISIBLITY
-  
+
+  // VISIBILITY
+
   /**
    *  Element.visible(@element) -> Boolean
    *
    *  Tells whether `element` is visible (i.e., whether its inline `display`
    *  CSS property is set to `none`.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <div id="visible"></div>
    *      <div id="hidden" style="display: none;"></div>
@@ -264,24 +264,24 @@
    *
    *      $('visible').visible();
    *      // -> true
-   *      
+   *
    *      $('hidden').visible();
    *      // -> false
-   *  
+   *
    *  ##### Notes
-   *  
+   *
    *  Styles applied via a CSS stylesheet are _not_ taken into consideration.
    *  Note that this is not a Prototype limitation, it is a CSS limitation.
-   *  
+   *
    *      language: html
    *      <style>
    *        #hidden-by-css {
    *          display: none;
    *        }
    *      </style>
-   *      
+   *
    *      [...]
-   *      
+   *
    *      <div id="hidden-by-css"></div>
    *
    *  And the associated JavaScript:
@@ -292,65 +292,65 @@
   function visible(element) {
     return $(element).style.display !== 'none';
   }
-  
+
   /**
    *  Element.toggle(@element[, bool]) -> Element
    *
    *  Toggles the CSS `display` of `element`. Returns `element`.
-   *  
+   *
    *  Switches an element's CSS `display` between `none` and its inherited
    *  value (usually `block` or `inline`).
    *
    *  By default, `toggle` will switch the display to the opposite of its
    *  current state, but will use the `bool` argument instead if it's
    *  provided (`true` to show the element, `false` to hide it).
-   *  
+   *
    *  ##### Examples
-   *  
-   *      <div id="welcome-message"></div>
-   *      <div id="error-message" style="display:none;"></div>
-   *  
+   *
+   *      <div id="welcome-message">Welcome</div>
+   *      <div id="error-message" style="display:none;">Error</div>
+   *
    *      $('welcome-message').toggle();
    *      // -> Element (and hides div#welcome-message)
-   *      
+   *
    *      $('error-message').toggle();
    *      // -> Element (and displays div#error-message)
-   *  
-   *      $('error-message).toggle(true);
+   *
+   *      $('error-message').toggle(true);
    *      // -> Element (and displays div#error-message, no matter what its
    *      //    previous state)
-   *  
+   *
    *  Toggle multiple elements using [[Enumerable#each]]:
-   *  
+   *
    *      ['error-message', 'welcome-message'].each(Element.toggle);
-   *      // -> ['error-message', 'welcome-message'] 
-   *  
+   *      // -> ['error-message', 'welcome-message']
+   *
    *  Toggle multiple elements using [[Enumerable#invoke]]:
-   *  
+   *
    *      $('error-message', 'welcome-message').invoke('toggle');
    *      // -> [Element, Element]
-   *  
+   *
    *      $('error-message', 'welcome-message').invoke('toggle', false);
    *      // -> [Element, Element] (and hides both elements, no matter what
    *            their previous state)
-   *  
+   *
    *
    *  ##### Notes
-   *  
+   *
    *  [[Element.toggle]] _cannot_ display elements hidden via CSS stylesheets.
    *  Note that this is not a Prototype limitation but a consequence of how the
    *  CSS `display` property works.
-   *  
+   *
    *      <style>
    *        #hidden-by-css {
    *          display: none;
    *        }
    *      </style>
-   *      
+   *
    *      [...]
-   *      
+   *
    *      <div id="hidden-by-css"></div>
-   *  
+   *
    *      $('hidden-by-css').toggle(); // WON'T WORK!
    *      // -> Element (div#hidden-by-css is still hidden!)
   **/
@@ -359,7 +359,7 @@
     if (Object.isUndefined(bool))
       bool = !Element.visible(element);
     Element[bool ? 'show' : 'hide'](element);
-    
+
     return element;
   }
 
@@ -367,72 +367,72 @@
    *  Element.hide(@element) -> Element
    *
    *  Sets `display: none` on `element`. Returns `element`.
-   *  
+   *
    *  ##### Examples
    *
    *  Hide a single element:
-   *  
+   *
    *      <div id="error-message"></div>
-   *  
+   *
    *      $('error-message').hide();
    *      // -> Element (and hides div#error-message)
    *
    *  Hide multiple elements using [[Enumerable#each]]:
-   *  
+   *
    *      ['content', 'navigation', 'footer'].each(Element.hide);
-   *      // -> ['content', 'navigation', 'footer'] 
-   *  
+   *      // -> ['content', 'navigation', 'footer']
+   *
    *  Hide multiple elements using [[Enumerable#invoke]]:
-   *  
+   *
    *      $('content', 'navigation', 'footer').invoke('hide');
    *      // -> [Element, Element, Element]
-  **/  
+  **/
   function hide(element) {
     element = $(element);
     element.style.display = 'none';
     return element;
   }
-  
+
   /**
    *  Element.show(@element) -> Element
    *
    *  Removes `display: none` on `element`. Returns `element`.
-   *  
+   *
    *  ##### Examples
    *
    *  Show a single element:
-   *  
+   *
    *      <div id="error-message" style="display:none;"></div>
-   *  
+   *
    *      $('error-message').show();
    *      // -> Element (and displays div#error-message)
-   *  
+   *
    *  Show multiple elements using [[Enumerable#each]]:
-   *  
+   *
    *      ['content', 'navigation', 'footer'].each(Element.show);
-   *      // -> ['content', 'navigation', 'footer'] 
-   *  
+   *      // -> ['content', 'navigation', 'footer']
+   *
    *  Show multiple elements using [[Enumerable#invoke]]:
-   *  
+   *
    *      $('content', 'navigation', 'footer').invoke('show');
    *      // -> [Element, Element, Element]
-   *  
+   *
    *  ##### Notes
-   *  
+   *
    *  [[Element.show]] _cannot_ display elements hidden via CSS stylesheets.
    *  Note that this is not a Prototype limitation but a consequence of how the
    *  CSS `display` property works.
-   *  
+   *
    *      <style>
    *        #hidden-by-css {
    *          display: none;
    *        }
    *      </style>
-   *      
+   *
    *      [...]
-   *      
+   *
    *      <div id="hidden-by-css"></div>
-   *  
+   *
    *      $('hidden-by-css').show(); // DOES NOT WORK!
    *      // -> Element (div#error-message is still hidden!)
   **/
@@ -441,17 +441,17 @@
     element.style.display = '';
     return element;
   }
-  
-  
+
+
   Object.extend(methods, {
     visible: visible,
     toggle:  toggle,
     hide:    hide,
     show:    show
   });
-  
+
   // MANIPULATION
-  
+
   /**
    *  Element.remove(@element) -> Element
    *
@@ -459,9 +459,9 @@
    *
    *  If you would rather just hide the element and keep it around for further
    *  use, try [[Element.hide]] instead.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      // Before:
    *      <ul>
@@ -475,7 +475,7 @@
    *
    *      $('mutsu').remove();
    *      // -> Element (and removes li#mutsu)
-   *  
+   *
    *  The resulting HTML:
    *
    *      language: html
@@ -490,7 +490,7 @@
     element.parentNode.removeChild(element);
     return element;
   }
-  
+
   // see: http://support.microsoft.com/kb/276228
   var SELECT_ELEMENT_INNERHTML_BUGGY = (function(){
     var el = document.createElement("select"),
@@ -517,11 +517,11 @@
       return true;
     }
   })();
-  
+
   var LINK_ELEMENT_INNERHTML_BUGGY = (function() {
     try {
       var el = document.createElement('div');
-      el.innerHTML = "<link>";
+      el.innerHTML = "<link />";
       var isBuggy = (el.childNodes.length === 0);
       el = null;
       return isBuggy;
@@ -529,9 +529,9 @@
       return true;
     }
   })();
-  
+
   var ANY_INNERHTML_BUGGY = SELECT_ELEMENT_INNERHTML_BUGGY ||
-   TABLE_ELEMENT_INNERHTML_BUGGY || LINK_ELEMENT_INNERHTML_BUGGY;    
+   TABLE_ELEMENT_INNERHTML_BUGGY || LINK_ELEMENT_INNERHTML_BUGGY;
 
   var SCRIPT_ELEMENT_REJECTS_TEXTNODE_APPENDING = (function () {
     var s = document.createElement("script"),
@@ -546,7 +546,15 @@
     s = null;
     return isBuggy;
   })();
-  
+
+
+  function updateNodes(element, nodes) {
+    while (element.firstChild)
+      element.removeChild(element.firstChild);
+    for (var i = 0, node; node = nodes[i]; i++)
+      element.appendChild(node);
+  }
+
   /**
    *  Element.update(@element[, newContent]) -> Element
    *
@@ -563,138 +571,126 @@
    *  If `newContent` is omitted, the element's content is blanked out (i.e.,
    *  replaced with an empty string).
    *
-   *  If `newContent` is a string and contains one or more inline `<script>` 
+   *  If `newContent` is a string and contains one or more inline `<script>`
    *  tags, the scripts are scheduled to be evaluated after a very brief pause
-   *  (using [[Function#defer]]) to allow the browser to finish updating the 
-   *  DOM. Note that the scripts are evaluated in the scope of 
+   *  (using [[Function#defer]]) to allow the browser to finish updating the
+   *  DOM. Note that the scripts are evaluated in the scope of
    *  [[String#evalScripts]], not in the global scope, which has important
    *  ramifications for your `var`s and `function`s.
    *  See [[String#evalScripts]] for details.
    *
-   *  Note that this method allows seamless content update of table related 
+   *  Note that this method allows seamless content update of table related
    *  elements in Internet Explorer 6 and beyond.
-   *  
+   *
    *  Any nodes replaced with `Element.update` will first have event
    *  listeners unregistered and storage keys removed. This frees up memory
    *  and prevents leaks in certain versions of Internet Explorer. (See
    *  [[Element.purge]]).
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <div id="fruits">carrot, eggplant and cucumber</div>
-   *  
+   *
    *  Passing a regular string:
-   *  
+   *
    *      $('fruits').update('kiwi, banana and apple');
    *      // -> Element
    *      $('fruits').innerHTML;
    *      // -> 'kiwi, banana and apple'
-   *  
+   *
    *  Clearing the element's content:
-   *  
+   *
    *      $('fruits').update();
    *      // -> Element
    *      $('fruits').innerHTML;
    *      // -> '' (an empty string)
-   *  
+   *
    *  And now inserting an HTML snippet:
-   *  
+   *
    *      $('fruits').update('<p>Kiwi, banana <em>and</em> apple.</p>');
    *      // -> Element
    *      $('fruits').innerHTML;
    *      // -> '<p>Kiwi, banana <em>and</em> apple.</p>'
-   *  
+   *
    *  ... with a `<script>` tag thrown in:
-   *  
+   *
    *      $('fruits').update('<p>Kiwi, banana <em>and</em> apple.</p><script>alert("updated!")</script>');
    *      // -> Element (and prints "updated!" in an alert dialog).
    *      $('fruits').innerHTML;
    *      // -> '<p>Kiwi, banana <em>and</em> apple.</p>'
-   *  
+   *
    *  Relying on the `toString()` method:
-   *  
+   *
    *      $('fruits').update(123);
    *      // -> Element
    *      $('fruits').innerHTML;
    *      // -> '123'
-   *  
+   *
    *  Finally, you can do some pretty funky stuff by defining your own
    *  `toString()` method on your custom objects:
-   *  
+   *
    *      var Fruit = Class.create({
    *        initialize: function(fruit){
    *          this.fruit = fruit;
    *        },
    *        toString: function(){
-   *          return 'I am a fruit and my name is "' + this.fruit + '".'; 
+   *          return 'I am a fruit and my name is "' + this.fruit + '".';
    *        }
    *      });
    *      var apple = new Fruit('apple');
-   *      
+   *
    *      $('fruits').update(apple);
    *      $('fruits').innerHTML;
    *      // -> 'I am a fruit and my name is "apple".'
   **/
   function update(element, content) {
     element = $(element);
-    
+
     // Purge the element's existing contents of all storage keys and
     // event listeners, since said content will be replaced no matter
     // what.
     var descendants = element.getElementsByTagName('*'),
      i = descendants.length;
     while (i--) purgeElement(descendants[i]);
-    
+
     if (content && content.toElement)
       content = content.toElement();
-      
+
     if (Object.isElement(content))
       return element.update().insert(content);
-      
-    
+
+
     content = Object.toHTML(content);
     var tagName = element.tagName.toUpperCase();
-    
+
     if (tagName === 'SCRIPT' && SCRIPT_ELEMENT_REJECTS_TEXTNODE_APPENDING) {
       // Scripts are not evaluated when updating a SCRIPT element.
       element.text = content;
       return element;
     }
-    
+
+    var strippedContent = content.stripScripts();
     if (ANY_INNERHTML_BUGGY) {
       if (tagName in INSERTION_TRANSLATIONS.tags) {
-        while (element.firstChild)
-          element.removeChild(element.firstChild);
-        
-        var nodes = getContentFromAnonymousElement(tagName, content.stripScripts());        
-        for (var i = 0, node; node = nodes[i]; i++)
-          element.appendChild(node);
-        
-      } else if (LINK_ELEMENT_INNERHTML_BUGGY && Object.isString(content) && content.indexOf('<link') > -1) {
+        updateNodes(element, getContentFromAnonymousElement(tagName, strippedContent));
+      } else if (LINK_ELEMENT_INNERHTML_BUGGY && strippedContent.indexOf('<link') > -1) {
         // IE barfs when inserting a string that beings with a LINK
         // element. The workaround is to add any content to the beginning
         // of the string; we'll be inserting a text node (see
         // getContentFromAnonymousElement below).
-        while (element.firstChild)
-          element.removeChild(element.firstChild);
-          
-        var nodes = getContentFromAnonymousElement(tagName,
-         content.stripScripts(), true);
-        
-        for (var i = 0, node; node = nodes[i]; i++)
-          element.appendChild(node);
+        updateNodes(element, getContentFromAnonymousElement(tagName, strippedContent, true));
       } else {
-        element.innerHTML = content.stripScripts();
+        element.innerHTML = strippedContent;
       }
     } else {
-      element.innerHTML = content.stripScripts();
+      element.innerHTML = strippedContent;
     }
-    
+
     content.evalScripts.bind(content).defer();
     return element;
   }
-  
+
   /**
    *  Element.replace(@element[, newContent]) -> Element
    *
@@ -705,53 +701,53 @@
    *
    *  `newContent` can be either plain text, an HTML snippet or any JavaScript
    *  object which has a `toString()` method.
-   *  
+   *
    *  If `newContent` contains any `<script>` tags, these will be evaluated
    *  after `element` has been replaced ([[Element.replace]] internally calls
    *  [[String#evalScripts]]).
-   *  
+   *
    *  Note that if no argument is provided, [[Element.replace]] will simply
    *  clear `element` of its content. However, using [[Element.remove]] to do so
    *  is both faster and more standard compliant.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <div id="food">
    *        <div id="fruits">
    *          <p id="first">Kiwi, banana <em>and</em> apple.</p>
    *        </div>
    *      </div>
-   *  
+   *
    *  Passing an HTML snippet:
-   *  
+   *
    *      $('first').replace('<ul id="favorite"><li>kiwi</li><li>banana</li><li>apple</li></ul>');
    *      // -> Element (p#first)
-   *      
+   *
    *      $('fruits').innerHTML;
    *      // -> '<ul id="favorite"><li>kiwi</li><li>banana</li><li>apple</li></ul>'
-   *  
+   *
    *  Again, with a `<script>` tag thrown in:
-   *  
+   *
    *      $('favorite').replace('<p id="still-first">Melon, oranges <em>and</em> grapes.</p><script>alert("removed!")</script>');
    *      // -> Element (ul#favorite) and prints "removed!" in an alert dialog.
-   *      
+   *
    *      $('fruits').innerHTML;
    *      // -> '<p id="still-first">Melon, oranges <em>and</em> grapes.</p>'
-   *  
+   *
    *  With plain text:
-   *  
+   *
    *      $('still-first').replace('Melon, oranges and grapes.');
    *      // -> Element (p#still-first)
    *
    *      $('fruits').innerHTML;
    *      // -> 'Melon, oranges and grapes.'
-   *  
+   *
    *  Finally, relying on the `toString()` method:
-   *  
+   *
    *      $('fruits').replace(123);
    *      // -> Element
-   *      
+   *
    *      $('food').innerHTML;
    *      // -> '123'
    *
@@ -763,13 +759,13 @@
    *  as part of [Web Forms 2](http://www.whatwg.org/specs/web-forms/current-work/).
    *  As a workaround, use the generic version instead
    *  (`Element.replace('foo', '<p>Bar</p>')`).
-   *  
+   *
   **/
   function replace(element, content) {
     element = $(element);
-    
+
     if (content && content.toElement) {
-      content = content.toElement();      
+      content = content.toElement();
     } else if (!Object.isElement(content)) {
       content = Object.toHTML(content);
       var range = element.ownerDocument.createRange();
@@ -777,11 +773,11 @@
       content.evalScripts.bind(content).defer();
       content = range.createContextualFragment(content.stripScripts());
     }
-      
+
     element.parentNode.replaceChild(content, element);
     return element;
   }
-  
+
   var INSERTION_TRANSLATIONS = {
     before: function(element, node) {
       element.parentNode.insertBefore(node, element);
@@ -795,7 +791,7 @@
     after: function(element, node) {
       element.parentNode.insertBefore(node, element.nextSibling);
     },
-    
+
     tags: {
       TABLE:  ['<table>',                '</table>',                   1],
       TBODY:  ['<table><tbody>',         '</tbody></table>',           2],
@@ -804,15 +800,15 @@
       SELECT: ['<select>',               '</select>',                  1]
     }
   };
-  
+
   var tags = INSERTION_TRANSLATIONS.tags;
-  
+
   Object.extend(tags, {
     THEAD: tags.TBODY,
     TFOOT: tags.TBODY,
     TH:    tags.TD
   });
-  
+
   function replace_IE(element, content) {
     element = $(element);
     if (content && content.toElement)
@@ -821,71 +817,71 @@
       element.parentNode.replaceChild(content, element);
       return element;
     }
-    
+
     content = Object.toHTML(content);
     var parent = element.parentNode, tagName = parent.tagName.toUpperCase();
-    
+
     if (tagName in INSERTION_TRANSLATIONS.tags) {
       var nextSibling = Element.next(element);
       var fragments = getContentFromAnonymousElement(
        tagName, content.stripScripts());
-      
+
       parent.removeChild(element);
-      
+
       var iterator;
       if (nextSibling)
-        iterator = function(node) { parent.insertBefore(node, nextSibling) };
+        iterator = function(node) { parent.insertBefore(node, nextSibling); };
       else
-        iterator = function(node) { parent.appendChild(node); }
-        
+        iterator = function(node) { parent.appendChild(node); };
+
       fragments.each(iterator);
     } else {
       // We don't need to special-case this one.
       element.outerHTML = content.stripScripts();
     }
-    
+
     content.evalScripts.bind(content).defer();
     return element;
   }
-  
+
   if ('outerHTML' in document.documentElement)
     replace = replace_IE;
-  
+
   function isContent(content) {
     if (Object.isUndefined(content) || content === null) return false;
-    
+
     if (Object.isString(content) || Object.isNumber(content)) return true;
-    if (Object.isElement(content)) return true;    
+    if (Object.isElement(content)) return true;
     if (content.toElement || content.toHTML) return true;
-    
+
     return false;
   }
-  
+
   // This private method does the bulk of the work for Element#insert. The
   // actual insert method handles argument normalization and multiple
   // content insertions.
   function insertContentAt(element, content, position) {
     position   = position.toLowerCase();
     var method = INSERTION_TRANSLATIONS[position];
-    
+
     if (content && content.toElement) content = content.toElement();
     if (Object.isElement(content)) {
       method(element, content);
       return element;
     }
-    
-    content = Object.toHTML(content);      
+
+    content = Object.toHTML(content);
     var tagName = ((position === 'before' || position === 'after') ?
      element.parentNode : element).tagName.toUpperCase();
-    
+
     var childNodes = getContentFromAnonymousElement(tagName, content.stripScripts());
-    
+
     if (position === 'top' || position === 'after') childNodes.reverse();
-    
+
     for (var i = 0, node; node = childNodes[i]; i++)
       method(element, node);
-      
-    content.evalScripts.bind(content).defer();    
+
+    content.evalScripts.bind(content).defer();
   }
 
   /**
@@ -935,16 +931,16 @@
   **/
   function insert(element, insertions) {
     element = $(element);
-    
+
     if (isContent(insertions))
       insertions = { bottom: insertions };
-      
+
     for (var position in insertions)
       insertContentAt(element, insertions[position], position);
-    
-    return element;    
+
+    return element;
   }
-  
+
   /**
    *  Element.wrap(@element, wrapper[, attributes]) -> Element
    *  - wrapper (Element | String): An element to wrap `element` inside, or
@@ -953,19 +949,19 @@
    *    element. Refer to the [[Element]] constructor for usage.
    *
    *  Wraps an element inside another, then returns the wrapper.
-   *  
+   *
    *  If the given element exists on the page, [[Element.wrap]] will wrap it in
    *  place — its position will remain the same.
-   *  
+   *
    *  The `wrapper` argument can be _either_ an existing [[Element]] _or_ a
    *  string representing the tag name of an element to be created. The optional
    *  `attributes` argument can contain a list of attribute/value pairs that
    *  will be set on the wrapper using [[Element.writeAttribute]].
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *  Original HTML:
-   *  
+   *
    *      language: html
    *      <table id="data">
    *        <tr>
@@ -977,20 +973,20 @@
    *          <td>2</td>
    *        </tr>
    *      </table>
-   *  
+   *
    *  JavaScript:
-   *  
+   *
    *      // approach 1:
    *      var div = new Element('div', { 'class': 'table-wrapper' });
    *      $('data').wrap(div);
-   *      
+   *
    *      // approach 2:
    *      $('data').wrap('div', { 'class': 'table-wrapper' });
-   *      
+   *
    *      // Both examples are equivalent &mdash; they return the DIV.
-   *  
+   *
    *  Resulting HTML:
-   *  
+   *
    *      language: html
    *      <div class="table-wrapper">
    *        <table id="data">
@@ -1003,8 +999,8 @@
    *            <td>2</td>
    *          </tr>
    *        </table>
-   *      </div> 
-   *  
+   *      </div>
+   *
    *  ##### Warning
    *
    *  Using [[Element.wrap]] as an instance method (e.g., `$('foo').wrap('p')`)
@@ -1015,10 +1011,10 @@
   **/
   function wrap(element, wrapper, attributes) {
     element = $(element);
-    
+
     if (Object.isElement(wrapper)) {
       // The wrapper argument is a DOM node.
-      $(wrapper).writeAttribute(attributes || {});      
+      $(wrapper).writeAttribute(attributes || {});
     } else if (Object.isString(wrapper)) {
       // The wrapper argument is a string representing a tag name.
       wrapper = new Element(wrapper, attributes);
@@ -1027,15 +1023,15 @@
       // of attributes.
       wrapper = new Element('div', wrapper);
     }
-    
+
     if (element.parentNode)
       element.parentNode.replaceChild(wrapper, element);
-    
+
     wrapper.appendChild(element);
-    
+
     return wrapper;
   }
-  
+
   /**
    *  Element.cleanWhitespace(@element) -> Element
    *
@@ -1081,7 +1077,7 @@
   function cleanWhitespace(element) {
     element = $(element);
     var node = element.firstChild;
-    
+
     while (node) {
       var nextNode = node.nextSibling;
       if (node.nodeType === Node.TEXT_NODE && !/\S/.test(node.nodeValue))
@@ -1090,17 +1086,17 @@
     }
     return element;
   }
-  
+
   /**
    *  Element.empty(@element) -> Element
    *
    *  Tests whether `element` is empty (i.e., contains only whitespace).
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      <div id="wallet">     </div>
    *      <div id="cart">full!</div>
-   *  
+   *
    *      $('wallet').empty();
    *      // -> true
    *
@@ -1110,33 +1106,33 @@
   function empty(element) {
     return $(element).innerHTML.blank();
   }
-  
+
   // In older versions of Internet Explorer, certain elements don't like
   // having innerHTML set on them — including SELECT and most table-related
   // tags. So we wrap the string with enclosing HTML (if necessary), stick it
   // in a DIV, then grab the DOM nodes.
   function getContentFromAnonymousElement(tagName, html, force) {
     var t = INSERTION_TRANSLATIONS.tags[tagName], div = DIV;
-    
+
     var workaround = !!t;
     if (!workaround && force) {
       workaround = true;
       t = ['', '', 0];
     }
-    
+
     if (workaround) {
-      div.innerHTML = '&nbsp;' + t[0] + html + t[1];
+      div.innerHTML = '&#160;' + t[0] + html + t[1];
       div.removeChild(div.firstChild);
       for (var i = t[2]; i--; )
         div = div.firstChild;
     } else {
       div.innerHTML = html;
     }
-    
+
     return $A(div.childNodes);
     //return SLICE.call(div.childNodes, 0);
   }
-  
+
   /**
    *  Element.clone(@element, deep) -> Element
    *  - deep (Boolean): Whether to clone `element`'s descendants as well.
@@ -1160,7 +1156,7 @@
     }
     return Element.extend(clone);
   }
-  
+
   // Performs cleanup on a single element before it is removed from the page.
   function purgeElement(element) {
     var uid = getUniqueElementID(element);
@@ -1171,15 +1167,23 @@
       delete Element.Storage[uid];
     }
   }
-  
-  function purgeCollection(elements) {
-    var i = elements.length;
-    while (i--)
-      purgeElement(elements[i]);
+
+  function purgeCollection(elements) { // FIX
+    var i = elements.length, element, uid;
+    while (i--) {
+      //purgeElement(elements[i]);
+      element = elements[i];
+      uid = getUniqueElementID(element);
+      if (uid) {
+        Element.stopObserving(element);
+        element._prototypeUID = UNDEFINED;
+        delete Element.Storage[uid];
+      }
+    }
   }
-  
+
   function purgeCollection_IE(elements) {
-    var i = elements.length, element, eventName, responders, uid, j;
+    var i = elements.length, element, uid;
     while (i--) {
       element = elements[i];
       uid = getUniqueElementID(element);
@@ -1187,31 +1191,31 @@
       delete Event.cache[uid];
     }
   }
-  
+
   if (HAS_UNIQUE_ID_PROPERTY) {
     purgeCollection = purgeCollection_IE;
   }
-  
-  
+
+
   /**
    *  Element.purge(@element) -> null
-   *  
+   *
    *  Removes all event listeners and storage keys from an element.
-   *  
+   *
    *  To be used just before removing an element from the page.
   **/
   function purge(element) {
     if (!(element = $(element))) return;
     purgeElement(element);
-    
+
     var descendants = element.getElementsByTagName('*'),
      i = descendants.length;
-     
+
     while (i--) purgeElement(descendants[i]);
-    
+
     return null;
   }
-  
+
   Object.extend(methods, {
     remove:  remove,
     update:  update,
@@ -1223,10 +1227,10 @@
     clone:   clone,
     purge:   purge
   });
-  
+
 
   // TRAVERSAL
-  
+
   /**
    *  Element.recursivelyCollect(@element, property) -> [Element...]
    *
@@ -1243,12 +1247,12 @@
    *  convenient way to grab elements, so directly accessing
    *  [[Element.recursivelyCollect]] should seldom be needed. However, if you
    *  are after something out of the ordinary, it is the way to go.
-   *  
+   *
    *  Note that all of Prototype's DOM traversal methods ignore text nodes and
    *  return element nodes only.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul id="fruits">
    *        <li id="apples">
@@ -1270,17 +1274,17 @@
     element = $(element);
     maximumLength = maximumLength || -1;
     var elements = [];
-    
+
     while (element = element[property]) {
       if (element.nodeType === Node.ELEMENT_NODE)
         elements.push(Element.extend(element));
-        
+
       if (elements.length === maximumLength) break;
     }
-    
-    return elements;    
+
+    return elements;
   }
-  
+
 
   /**
    *  Element.ancestors(@element) -> [Element...]
@@ -1317,7 +1321,7 @@
   function ancestors(element) {
     return recursivelyCollect(element, 'parentNode');
   }
-  
+
   /**
    *  Element.descendants(@element) -> [Element...]
    *
@@ -1329,7 +1333,7 @@
   function descendants(element) {
     return Element.select(element, '*');
   }
-  
+
   /**
    *  Element.firstDescendant(@element) -> Element
    *
@@ -1339,7 +1343,7 @@
    *  any node, including text nodes and comment nodes.
    *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <div id="australopithecus">
    *        <div id="homo-erectus"><!-- Latin is super -->
@@ -1352,11 +1356,11 @@
    *
    *      $('australopithecus').firstDescendant();
    *      // -> div#homo-erectus
-   *      
+   *
    *      // the DOM property returns any first node
    *      $('homo-erectus').firstChild;
    *      // -> comment node "Latin is super"
-   *      
+   *
    *      // this is what we want!
    *      $('homo-erectus').firstDescendant();
    *      // -> div#homo-neanderthalensis
@@ -1368,7 +1372,18 @@
 
     return $(element);
   }
-  
+
+  /**
+   *  Element.lastDescendant(@element) -> Element
+   *
+   *  Returns the last child that is an element.
+  **/
+  function lastDescendant(element) {
+    element = $(element).lastChild;
+    while (element && element.nodeType != 1) element = element.previousSibling;
+    return $(element);
+  }
+
   /** deprecated, alias of: Element.childElements
    *  Element.immediateDescendants(@element) -> [Element...]
    *
@@ -1376,37 +1391,37 @@
   **/
   function immediateDescendants(element) {
     var results = [], child = $(element).firstChild;
-    
+
     while (child) {
       if (child.nodeType === Node.ELEMENT_NODE)
         results.push(Element.extend(child));
-      
+
       child = child.nextSibling;
     }
-    
+
     return results;
   }
-  
+
   /**
    *  Element.previousSiblings(@element) -> [Element...]
    *
    *  Collects all of `element`'s previous siblings and returns them as an
    *  [[Array]] of elements.
-   *  
+   *
    *  Two elements are siblings if they have the same parent. So for example,
    *  the `<head>` and `<body>` elements are siblings (their parent is the
    *  `<html>` element). Previous-siblings are simply the ones which precede
    *  `element` in the document.
-   *  
+   *
    *  The returned [[Array]] reflects the siblings _inversed_ order in the
    *  document (e.g. an index of 0 refers to the lowest sibling i.e., the one
    *  closest to `element`).
-   *  
+   *
    *  Note that all of Prototype's DOM traversal methods ignore text nodes and
    *  return element nodes only.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul>
    *        <li id="golden-delicious">Golden Delicious</li>
@@ -1419,33 +1434,33 @@
    *
    *      $('mcintosh').previousSiblings();
    *      // -> [li#mutsu, li#golden-delicious]
-   *      
+   *
    *      $('golden-delicious').previousSiblings();
    *      // -> []
   **/
-  function previousSiblings(element) {
-    return recursivelyCollect(element, 'previousSibling');
+  function previousSiblings(element, maximumLength) {
+    return recursivelyCollect(element, 'previousSibling', maximumLength);
   }
-  
+
   /**
    *  Element.nextSiblings(@element) -> [Element...]
    *
    *  Collects all of `element`'s next siblings and returns them as an [[Array]]
    *  of elements.
-   *  
+   *
    *  Two elements are siblings if they have the same parent. So for example,
    *  the `head` and `body` elements are siblings (their parent is the `html`
    *  element). Next-siblings are simply the ones which follow `element` in the
    *  document.
-   *  
+   *
    *  The returned [[Array]] reflects the siblings order in the document
    *  (e.g. an index of 0 refers to the sibling right below `element`).
-   *  
+   *
    *  Note that all of Prototype's DOM traversal methods ignore text nodes and
    *  return element nodes only.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul>
    *        <li id="golden-delicious">Golden Delicious</li>
@@ -1458,31 +1473,32 @@
    *
    *      $('mutsu').nextSiblings();
    *      // -> [li#mcintosh, li#ida-red]
-   *      
+   *
    *      $('ida-red').nextSiblings();
    *      // -> []
   **/
-  function nextSiblings(element) {
-    return recursivelyCollect(element, 'nextSibling');
+  function nextSiblings(element, maximumLength) {
+    return recursivelyCollect(element, 'nextSibling', maximumLength);
   }
-  
+
   /**
    *  Element.siblings(@element) -> [Element...]
+   *
    *  Collects all of element's siblings and returns them as an [[Array]] of
    *  elements.
    *
    *  Two elements are siblings if they have the same parent. So for example,
    *  the `head` and `body` elements are siblings (their parent is the `html`
    *  element).
-   *  
+   *
    *  The returned [[Array]] reflects the siblings' order in the document (e.g.
    *  an index of 0 refers to `element`'s topmost sibling).
-   *  
+   *
    *  Note that all of Prototype's DOM traversal methods ignore text nodes and
    *  return element nodes only.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul>
    *        <li id="golden-delicious">Golden Delicious</li>
@@ -1497,12 +1513,12 @@
    *      // -> [li#golden-delicious, li#mcintosh, li#ida-red]
   **/
   function siblings(element) {
-    element = $(element);    
+    element = $(element);
     var previous = previousSiblings(element),
      next = nextSiblings(element);
     return previous.reverse().concat(next);
   }
-  
+
   /**
    *  Element.match(@element, selector) -> boolean
    *  - selector (String): A CSS selector.
@@ -1510,7 +1526,7 @@
    *  Checks if `element` matches the given CSS selector.
    *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul id="fruits">
    *        <li id="apples">
@@ -1527,24 +1543,50 @@
    *
    *      $('fruits').match('ul');
    *      // -> true
-   *      
+   *
    *      $('mcintosh').match('li#mcintosh.yummy');
    *      // -> true
-   *      
+   *
    *      $('fruits').match('p');
    *      // -> false
   **/
   function match(element, selector) {
     element = $(element);
-    
+
     // If selector is a string, we assume it's a CSS selector.
     if (Object.isString(selector))
       return Prototype.Selector.match(element, selector);
-      
+
     // Otherwise, we assume it's an object with its own `match` method.
     return selector.match(element);
   }
-  
+
+
+  // Internal method for optimizing traversal. Works like
+  // `recursivelyCollect`, except it stops at the first match and doesn't
+  // extend any elements except for the returned element.
+  function _recursivelyFind(element, property, expression, index) {
+    element = $(element), expression = expression || 0, index = index || 0;
+    if (Object.isNumber(expression)) {
+      index = expression, expression = null;
+    }
+
+    var selector = Prototype.Selector;
+
+    while (element = element[property]) {
+      // Skip any non-element nodes.
+      if (element.nodeType !== 1) continue;
+      // Skip any nodes that don't match the expression, if there is one.
+      if (expression && !selector.match(element, expression))
+        continue;
+      // Skip the first `index` matches we find.
+      if (--index >= 0) continue;
+
+      return Element.extend(element);
+    }
+  }
+
+
   /**
    *  Element.up(@element[, expression[, index = 0]]) -> Element
    *  Element.up(@element[, index = 0]) -> Element
@@ -1559,43 +1601,43 @@
    *
    *  The [[Element.up]] method is part of Prototype's ultimate DOM traversal
    *  toolkit (check out [[Element.down]], [[Element.next]] and
-   *  [[Element.previous]] for some more Prototypish niceness). It allows 
+   *  [[Element.previous]] for some more Prototypish niceness). It allows
    *  precise index-based and/or CSS rule-based selection of any of `element`'s
    *  **ancestors**.
-   *  
+   *
    *  As it totally ignores text nodes (it only returns elements), you don't
    *  have to worry about whitespace nodes.
-   *  
+   *
    *  And as an added bonus, all elements returned are already extended
    *  (see [[Element.extended]]) allowing chaining:
-   *  
+   *
    *      $(element).up(1).next('li', 2).hide();
-   *  
+   *
    *  Walking the DOM has never been that easy!
-   *  
+   *
    *  ##### Arguments
-   *  
+   *
    *  If no arguments are passed, `element`'s first ancestor is returned (this
    *  is similar to calling `parentNode` except [[Element.up]] returns an already
    *  extended element.
-   *  
+   *
    *  If `index` is defined, `element`'s corresponding ancestor is returned.
    *  (This is equivalent to selecting an element from the array of elements
    *  returned by the method [[Element.ancestors]]). Note that the first element
    *  has an index of 0.
-   *  
+   *
    *  If `expression` is defined, [[Element.up]] will return the first ancestor
    *  that matches it.
-   *  
+   *
    *  If both `expression` and `index` are defined, [[Element.up]] will collect
    *  all the ancestors matching the given CSS expression and will return the
    *  one at the specified index.
-   *  
+   *
    *  **In all of the above cases, if no descendant is found,** `undefined`
    *  **will be returned.**
-   *  
+   *
    *  ### Examples
-   *  
+   *
    *      language: html
    *      <html>
    *        [...]
@@ -1621,12 +1663,12 @@
    *      // -> body
    *
    *  Get the third ancestor of "#mutsu":
-   *      
+   *
    *      $('mutsu').up(2);
    *      // -> ul#fruits
    *
    *  Get the first ancestor of "#mutsu" with the node name "li":
-   *      
+   *
    *      $('mutsu').up('li');
    *      // -> li#apples
    *
@@ -1637,25 +1679,21 @@
    *      // -> li#apples
    *
    *  Get the second ancestor of "#mutsu" with the node name "ul":
-   *      
+   *
    *      $('mutsu').up('ul', 1);
    *      // -> ul#fruits
    *
    *  Try to get the first ancestor of "#mutsu" with the node name "div":
-   *      
+   *
    *      $('mutsu').up('div');
    *      // -> undefined
   **/
   function up(element, expression, index) {
     element = $(element);
-    
     if (arguments.length === 1) return $(element.parentNode);
-    
-    var ancestors = Element.ancestors(element);
-    return Object.isNumber(expression) ? ancestors[expression] :
-     Prototype.Selector.find(ancestors, expression, index);
+    return _recursivelyFind(element, 'parentNode', expression, index);
   }
-  
+
   /**
    *  Element.down(@element[, expression[, index = 0]]) -> Element
    *  Element.down(@element[, index = 0]) -> Element
@@ -1671,43 +1709,43 @@
    *  The [[Element.down]] method is part of Prototype's ultimate DOM traversal
    *  toolkit (check out [[Element.up]], [[Element.next]] and
    *  [[Element.previous]] for some more Prototypish niceness). It allows
-   *  precise index-based and/or CSS rule-based selection of any of the 
+   *  precise index-based and/or CSS rule-based selection of any of the
    *  element's **descendants**.
-   *  
+   *
    *  As it totally ignores text nodes (it only returns elements), you don't
    *  have to worry about whitespace nodes.
-   *  
+   *
    *  And as an added bonus, all elements returned are already extended
    *  (see [[Element.extend]]) allowing chaining:
-   *  
+   *
    *      $(element).down(1).next('li', 2).hide();
-   *  
+   *
    *  Walking the DOM has never been that easy!
-   *  
+   *
    *  ##### Arguments
-   *  
+   *
    *  If no arguments are passed, `element`'s first descendant is returned (this
    *  is similar to calling `firstChild` except [[Element.down]] returns an
    *  extended element.
-   *  
+   *
    *  If `index` is defined, `element`'s corresponding descendant is returned.
    *  (This is equivalent to selecting an element from the array of elements
    *  returned by the method [[Element.descendants]].) Note that the first
    *  element has an index of 0.
-   *  
+   *
    *  If `expression` is defined, [[Element.down]] will return the first
    *  descendant that matches it. This is a great way to grab the first item in
    *  a list for example (just pass in 'li' as the method's first argument).
-   *  
+   *
    *  If both `expression` and `index` are defined, [[Element.down]] will collect
    *  all the descendants matching the given CSS expression and will return the
    *  one at the specified index.
-   *  
+   *
    *  **In all of the above cases, if no descendant is found,** `undefined`
    *  **will be returned.**
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul id="fruits">
    *        <li id="apples">
@@ -1719,7 +1757,7 @@
    *          </ul>
    *        </li>
    *      </ul>
-   *      
+   *
    *  Get the first descendant of "#fruites":
    *
    *      $('fruits').down();
@@ -1728,10 +1766,10 @@
    *      // -> li#apples
    *
    *  Get the third descendant of "#fruits":
-   *      
+   *
    *      $('fruits').down(3);
    *      // -> li#golden-delicious
-   *      
+   *
    *  Get the first descendant of "#apples" with the node name "li":
    *
    *      $('apples').down('li');
@@ -1754,38 +1792,16 @@
    *      // -> undefined
   **/
   function down(element, expression, index) {
-    element = $(element);
-    
     if (arguments.length === 1) return firstDescendant(element);
-    
-    return Object.isNumber(expression) ? Element.descendants(element)[expression] :
-     Element.select(element, expression)[index || 0];
-  }
+    element = $(element), expression = expression || 0, index = index || 0;
 
-  
-  function _descendants(element) {
-    var nodes = element.getElementsByTagName('*'), results = [];
-    for (var i = 0, node; node = nodes[i]; i++)
-      if (node.tagName !== "!") // Filter out comment nodes.
-        results.push(node);
-    return results;
-  }
-  
-  // We optimize Element#down for IE so that it does not call
-  // Element#descendants (and therefore extend all nodes).
-  function down_IE(element, expression, index) {
-    element = $(element);
-    if (arguments.length === 1)
-      return Element.firstDescendant(element);
+    if (Object.isNumber(expression))
+      index = expression, expression = '*';
 
-    var node = Object.isNumber(expression) ? _descendants(element)[expression] :
-      Element.select(element, expression)[index || 0];
+    var node = Prototype.Selector.select(expression, element)[index];
     return Element.extend(node);
   }
-  
-  if (!Prototype.BrowserFeatures.ElementExtensions)
-    down = down_IE;
-  
+
   /**
    *  Element.previous(@element[, expression[, index = 0]]) -> Element
    *  Element.previous(@element[, index = 0]) -> Element
@@ -1805,40 +1821,40 @@
    *  **previous siblings**. (Note that two elements are considered siblings if
    *  they have the same parent, so for example, the `head` and `body` elements
    *  are siblings&#8212;their parent is the `html` element.)
-   *  
+   *
    *  As it totally ignores text nodes (it only returns elements), you don't
    *  have to worry about whitespace nodes.
-   *  
-   *  And as an added bonus, all elements returned are already extended (see 
+   *
+   *  And as an added bonus, all elements returned are already extended (see
    *  [[Element.extend]]) allowing chaining:
-   *  
+   *
    *      $(element).down('p').previous('ul', 2).hide();
-   *  
+   *
    *  Walking the DOM has never been that easy!
-   *  
+   *
    *  ##### Arguments
-   *  
+   *
    *  If no arguments are passed, `element`'s previous sibling is returned
    *  (this is similar as calling `previousSibling` except [[Element.previous]]
    *  returns an already extended element).
-   *  
+   *
    *  If `index` is defined, `element`'s corresponding previous sibling is
    *  returned. (This is equivalent to selecting an element from the array of
    *  elements returned by the method [[Element.previousSiblings]]). Note that
    *  the sibling _right above_ `element` has an index of 0.
-   *  
+   *
    *  If `expression` is defined, [[Element.previous]] will return the `element`
    *  first previous sibling that matches it.
-   *  
+   *
    *  If both `expression` and `index` are defined, [[Element.previous]] will
    *  collect all of `element`'s previous siblings matching the given CSS
    *  expression and will return the one at the specified index.
-   *  
+   *
    *  **In all of the above cases, if no previous sibling is found,**
    *  `undefined` **will be returned.**
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul id="fruits">
    *        <li id="apples">
@@ -1849,12 +1865,12 @@
    *            <li id="mcintosh">McIntosh</li>
    *            <li id="ida-red">Ida Red</li>
    *          </ul>
-   *          <p id="saying">An apple a day keeps the doctor away.</p>  
+   *          <p id="saying">An apple a day keeps the doctor away.</p>
    *        </li>
    *      </ul>
-   *  
+   *
    *  Get the first previous sibling of "#saying":
-   *  
+   *
    *      $('saying').previous();
    *      // or:
    *      $('saying').previous(0);
@@ -1881,23 +1897,14 @@
    *      // -> li#golden-delicious
    *
    *  Try to get the sixth previous sibling of "#ida-red":
-   *      
+   *
    *      $('ida-red').previous(5);
    *      // -> undefined
   **/
   function previous(element, expression, index) {
-    element = $(element);
-    if (Object.isNumber(expression))
-      index = expression, expression = false;
-    if (!Object.isNumber(index)) index = 0;
-  
-    if (expression) {
-      return Prototype.Selector.find(previousSiblings(element), expression, index);
-    } else {
-      return recursivelyCollect(element, 'previousSibling', index + 1)[index];
-    }
+    return _recursivelyFind(element, 'previousSibling', expression, index);
   }
-  
+
   /**
    *  Element.next(@element[, expression[, index = 0]]) -> Element
    *  Element.next(@element[, index = 0]) -> Element
@@ -1917,40 +1924,40 @@
    *  `element`'s **following siblings**. (Note that two elements are considered
    *  siblings if they have the same parent, so for example, the `head` and
    *  `body` elements are siblings&#8212;their parent is the `html` element.)
-   *  
+   *
    *  As it totally ignores text nodes (it only returns elements), you don't
    *  have to worry about whitespace nodes.
-   *  
-   *  And as an added bonus, all elements returned are already extended (see 
+   *
+   *  And as an added bonus, all elements returned are already extended (see
    *  [[Element.extend]]) allowing chaining:
-   *  
+   *
    *      $(element).down(1).next('li', 2).hide();
-   *  
+   *
    *  Walking the DOM has never been that easy!
-   *  
+   *
    *  ##### Arguments
-   *  
+   *
    *  If no arguments are passed, `element`'s following sibling is returned
    *  (this is similar as calling `nextSibling` except [[Element.next]] returns an
    *  already extended element).
-   *  
+   *
    *  If `index` is defined, `element`'s corresponding following sibling is
    *  returned. (This is equivalent to selecting an element from the array of
    *  elements returned by the method [[Element.nextSiblings]]). Note that the
    *  sibling _right below_ `element` has an index of 0.
-   *  
+   *
    *  If `expression` is defined, [[Element.next]] will return the `element` first
    *  following sibling that matches it.
-   *  
+   *
    *  If both `expression` and `index` are defined, [[Element.next]] will collect
    *  all of `element`'s following siblings matching the given CSS expression
    *  and will return the one at the specified index.
-   *  
+   *
    *  **In all of the above cases, if no following sibling is found,**
    *  `undefined` **will be returned.**
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul id="fruits">
    *        <li id="apples">
@@ -1961,12 +1968,12 @@
    *            <li id="mcintosh" class="yummy">McIntosh</li>
    *            <li id="ida-red" class="yummy">Ida Red</li>
    *          </ul>
-   *          <p id="saying">An apple a day keeps the doctor away.</p>  
+   *          <p id="saying">An apple a day keeps the doctor away.</p>
    *        </li>
    *      </ul>
    *
    *  Get the first sibling after "#title":
-   *  
+   *
    *      $('title').next();
    *      // or:
    *      $('title').next(0);
@@ -1983,7 +1990,7 @@
    *      // -> p#sayings
    *
    *  Get the first sibling after "#golden-delicious" with class name "yummy":
-   *      
+   *
    *      $('golden-delicious').next('.yummy');
    *      // -> li#mcintosh
    *
@@ -1995,21 +2002,12 @@
    *  Try to get the first sibling after "#ida-red":
    *
    *      $('ida-red').next();
-   *      // -> undefined   
+   *      // -> undefined
   **/
   function next(element, expression, index) {
-    element = $(element);
-    if (Object.isNumber(expression))
-      index = expression, expression = false;
-    if (!Object.isNumber(index)) index = 0;
-    
-    if (expression) {
-      return Prototype.Selector.find(nextSiblings(element), expression, index);
-    } else {
-      return recursivelyCollect(element, 'nextSibling', index + 1)[index];
-    }
+    return _recursivelyFind(element, 'nextSibling', expression, index);
   }
-    
+
   /**
    *  Element.select(@element, expression...) -> [Element...]
    *  - expression (String): A CSS selector.
@@ -2017,12 +2015,12 @@
    *  Takes an arbitrary number of CSS selectors and returns an array of
    *  descendants of `element` that match any of them.
    *
-   *  This method is very similar to [[$$]] but can be used within the context 
-   *  of one element, rather than the whole document. The supported CSS syntax 
+   *  This method is very similar to [[$$]] but can be used within the context
+   *  of one element, rather than the whole document. The supported CSS syntax
    *  is identical, so please refer to the [[$$]] docs for details.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <ul id="fruits">
    *        <li id="apples">
@@ -2033,7 +2031,7 @@
    *            <li id="mcintosh">McIntosh</li>
    *            <li id="ida-red">Ida Red</li>
    *          </ul>
-   *          <p id="saying">An apple a day keeps the doctor away.</p>  
+   *          <p id="saying">An apple a day keeps the doctor away.</p>
    *        </li>
    *      </ul>
    *
@@ -2041,28 +2039,28 @@
    *
    *      $('apples').select('[title="yummy!"]');
    *      // -> [h3, li#golden-delicious, li#mutsu]
-   *      
+   *
    *      $('apples').select( 'p#saying', 'li[title="yummy!"]');
    *      // -> [li#golden-delicious, li#mutsu,  p#saying]
-   *      
+   *
    *      $('apples').select('[title="disgusting!"]');
    *      // -> []
-   *  
+   *
    *  ##### Tip
    *
    *  [[Element.select]] can be used as a pleasant alternative to the native
    *  method `getElementsByTagName`:
-   *  
+   *
    *      var nodes  = $A(someUL.getElementsByTagName('li')).map(Element.extend);
    *      var nodes2 = someUL.select('li');
-   *  
+   *
    *  In the first example, you must explicitly convert the result set to an
    *  [[Array]] (so that Prototype's [[Enumerable]] methods can be used) and
-   *  must manually call [[Element.extend]] on each node (so that custom 
-   *  instance methods can be used on the nodes). [[Element.select]] takes care 
+   *  must manually call [[Element.extend]] on each node (so that custom
+   *  instance methods can be used on the nodes). [[Element.select]] takes care
    *  of both concerns on its own.
-   *  
-   *  If you're using 1.6 or above (and the performance optimizations therein), 
+   *
+   *  If you're using 1.6 or above (and the performance optimizations therein),
    *  the speed difference between these two examples is negligible.
   **/
   function select(element) {
@@ -2100,7 +2098,7 @@
    *      // -> [li#chi, li#la, li#aus]
    *      $('nyc').adjacent('li.uk', 'li.jp');
    *      // -> [li#lon, li#tok]
-  **/  
+  **/
   function adjacent(element) {
     element = $(element);
     var expressions = SLICE.call(arguments, 1).join(', ');
@@ -2109,10 +2107,10 @@
       if (Prototype.Selector.match(sibling, expressions))
         results.push(sibling);
     }
-    
+
     return results;
   }
-  
+
   /**
    *  Element.descendantOf(@element, ancestor) -> Boolean
    *  - ancestor (Element | String): The element to check against (or its ID).
@@ -2139,24 +2137,24 @@
    *      // -> false
   **/
   function descendantOf_DOM(element, ancestor) {
-    element = $(element);
+    element = $(element), ancestor = $(ancestor);
     while (element = element.parentNode)
       if (element === ancestor) return true;
     return false;
   }
-  
+
   function descendantOf_contains(element, ancestor) {
     element = $(element), ancestor = $(ancestor);
     // Some nodes, like `document`, don't have the "contains" method.
     if (!ancestor.contains) return descendantOf_DOM(element, ancestor);
     return ancestor.contains(element) && ancestor !== element;
   }
-  
+
   function descendantOf_compareDocumentPosition(element, ancestor) {
     element = $(element), ancestor = $(ancestor);
     return (element.compareDocumentPosition(ancestor) & 8) === 8;
   }
-  
+
   var descendantOf;
   if (DIV.compareDocumentPosition) {
     descendantOf = descendantOf_compareDocumentPosition;
@@ -2165,8 +2163,8 @@
   } else {
     descendantOf = descendantOf_DOM;
   }
-  
-  
+
+
   Object.extend(methods, {
     recursivelyCollect:   recursivelyCollect,
     ancestors:            ancestors,
@@ -2184,13 +2182,13 @@
     select:               select,
     adjacent:             adjacent,
     descendantOf:         descendantOf,
-    
+
     // ALIASES
     /** alias of: Element.select
      *  Element.getElementsBySelector(@element, selector) -> [Element...]
     **/
     getElementsBySelector: select,
-    
+
     /**
      *  Element.childElements(@element) -> [Element...]
      *
@@ -2228,34 +2226,34 @@
     **/
     childElements:         immediateDescendants
   });
-  
-  
+
+
   // ATTRIBUTES
   /**
    *  Element.identify(@element) -> String
    *
    *  Returns `element`'s ID. If `element` does not have an ID, one is
    *  generated, assigned to `element`, and returned.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *  Original HTML:
-   *  
+   *
    *        <ul>
    *          <li id="apple">apple</li>
    *          <li>orange</li>
    *        </ul>
-   *  
+   *
    *  JavaScript:
-   *  
+   *
    *        $('apple').identify();
    *        // -> 'apple'
-   *      
+   *
    *        $('apple').next().identify();
    *        // -> 'anonymous_element_1'
-   *  
+   *
    *  Resulting HTML:
-   *  
+   *
    *        <ul>
    *          <li id="apple">apple</li>
    *          <li id="anonymous_element_1">orange</li>
@@ -2266,30 +2264,30 @@
     element = $(element);
     var id = Element.readAttribute(element, 'id');
     if (id) return id;
-    
+
     // The element doesn't have an ID of its own. Give it one, first ensuring
     // that it's unique.
-    do { id = 'anonymous_element_' + idCounter++ } while ($(id));
-    
+    do { id = 'anonymous_element_' + idCounter++; } while ($(id));
+
     Element.writeAttribute(element, 'id', id);
     return id;
   }
-  
+
 
   /**
    *  Element.readAttribute(@element, attributeName) -> String | null
    *
    *  Returns the value of `element`'s `attribute` or `null` if `attribute` has
    *  not been specified.
-   *  
+   *
    *  This method serves two purposes. First it acts as a simple wrapper around
    *  `getAttribute` which isn't a "real" function in Safari and Internet
    *  Explorer (it doesn't have `.apply` or `.call` for instance). Secondly, it
    *  cleans up the horrible mess Internet Explorer makes when handling
    *  attributes.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <a id="tag" href="/tags/prototype" rel="tag" title="view related bookmarks." my_widget="some info.">Prototype</a>
    *
@@ -2297,45 +2295,44 @@
    *
    *      $('tag').readAttribute('href');
    *      // -> '/tags/prototype'
-   *      
+   *
    *      $('tag').readAttribute('title');
    *      // -> 'view related bookmarks.'
-   *      
+   *
    *      $('tag').readAttribute('my_widget');
    *      // -> 'some info.'
   **/
   function readAttribute(element, name) {
-    element = $(element);
-    return element.getAttribute(name);
+    return $(element).getAttribute(name);
   }
-  
+
   function readAttribute_IE(element, name) {
     element = $(element);
-    
+
     // If the attribute name exists in the value translation table, it means
     // we should use a custom method for retrieving that attribute's value.
     var table = ATTRIBUTE_TRANSLATIONS.read;
     if (table.values[name])
       return table.values[name](element, name);
-      
+
     // If it exists in the name translation table, it means the attribute has
     // an alias.
     if (table.names[name]) name = table.names[name];
-    
+
     // Special-case namespaced attributes.
     if (name.include(':')) {
       if (!element.attributes || !element.attributes[name]) return null;
       return element.attributes[name].value;
     }
-    
+
     return element.getAttribute(name);
   }
-  
+
   function readAttribute_Opera(element, name) {
     if (name === 'title') return element.title;
-    return element.getAttribute(attribute);
+    return element.getAttribute(name);
   }
-  
+
   var PROBLEMATIC_ATTRIBUTE_READING = (function() {
     DIV.setAttribute('onclick', Prototype.emptyFunction);
     var value = DIV.getAttribute('onclick');
@@ -2343,14 +2340,14 @@
     DIV.removeAttribute('onclick');
     return isFunction;
   })();
-  
+
   if (PROBLEMATIC_ATTRIBUTE_READING) {
     readAttribute = readAttribute_IE;
   } else if (Prototype.Browser.Opera) {
     readAttribute = readAttribute_Opera;
   }
-  
-  
+
+
   /**
    *  Element.writeAttribute(@element, attribute[, value = true]) -> Element
    *  Element.writeAttribute(@element, attributes) -> Element
@@ -2361,18 +2358,18 @@
   function writeAttribute(element, name, value) {
     element = $(element);
     var attributes = {}, table = ATTRIBUTE_TRANSLATIONS.write;
-    
+
     if (typeof name === 'object') {
       attributes = name;
     } else {
       attributes[name] = Object.isUndefined(value) ? true : value;
     }
-    
+
     for (var attr in attributes) {
       name = table.names[attr] || attr;
       value = attributes[attr];
       if (table.values[attr])
-        name = table.values[attr](element, value);
+        name = table.values[attr](element, value) || name;
       if (value === false || value === null)
         element.removeAttribute(name);
       else if (value === true)
@@ -2382,15 +2379,32 @@
 
     return element;
   }
-  
+
+  /**
+   *  Element.hasAttribute(@element, attribute) -> Boolean
+   *
+   *  Simulates the standard compliant DOM method
+   *  [`hasAttribute`](http://www.w3.org/TR/DOM-Level-2-Core/core.html#ID-ElHasAttr)
+   *  for browsers missing it (Internet Explorer 6 and 7).
+   *
+   *  ##### Example
+   *
+   *      language: html
+   *      <a id="link" href="http://prototypejs.org">Prototype</a>
+   *
+   *  Then:
+   *
+   *      $('link').hasAttribute('href');
+   *      // -> true
+  **/
   function hasAttribute(element, attribute) {
     attribute = ATTRIBUTE_TRANSLATIONS.has[attribute] || attribute;
     var node = $(element).getAttributeNode(attribute);
     return !!(node && node.specified);
   }
-  
+
   GLOBAL.Element.Methods.Simulated.hasAttribute = hasAttribute;
-  
+
   /** deprecated
    *  Element.classNames(@element) -> [String...]
    *
@@ -2402,25 +2416,25 @@
    *  an array of classnames, you can use `$w(element.className)`.
   **/
   function classNames(element) {
-    return new Element.ClassNames(element);
+    return $w($(element).className);
   }
-  
+
   var regExpCache = {};
   function getRegExpForClassName(className) {
     if (regExpCache[className]) return regExpCache[className];
-    
-    re = new RegExp("(^|\\s+)" + className + "(\\s+|$)");
+
+    var re = new RegExp("(^|\\s+)" + className + "(\\s+|$)");
     regExpCache[className] = re;
     return re;
   }
-  
+
   /**
    *  Element.hasClassName(@element, className) -> Boolean
    *
    *  Checks for the presence of CSS class `className` on `element`.
    *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <div id="mutsu" class="apple fruit food"></div>
    *
@@ -2428,23 +2442,23 @@
    *
    *      $('mutsu').hasClassName('fruit');
    *      // -> true
-   *      
+   *
    *      $('mutsu').hasClassName('vegetable');
    *      // -> false
   **/
   function hasClassName(element, className) {
     if (!(element = $(element))) return;
-    
+
     var elementClassName = element.className;
 
     // We test these common cases first because we'd like to avoid creating
     // the regular expression, if possible.
     if (elementClassName.length === 0) return false;
     if (elementClassName === className) return true;
-    
+
     return getRegExpForClassName(className).test(elementClassName);
   }
-  
+
   /**
    *  Element.addClassName(@element, className) -> Element
    *  - className (String): The class name to add.
@@ -2468,13 +2482,13 @@
   **/
   function addClassName(element, className) {
     if (!(element = $(element))) return;
-    
+
     if (!hasClassName(element, className))
       element.className += (element.className ? ' ' : '') + className;
-      
+
     return element;
   }
-  
+
   /**
    *  Element.removeClassName(@element, className) -> Element
    *
@@ -2486,35 +2500,35 @@
    *
    *      language: html
    *      <div id="mutsu" class="apple fruit food"></div>
-   *  
+   *
    *  Then:
    *
    *      $('mutsu').removeClassName('food');
    *      // -> Element
-   *      
-   *      $('mutsu').classNames;
+   *
+   *      $('mutsu').className;
    *      // -> 'apple fruit'
   **/
   function removeClassName(element, className) {
     if (!(element = $(element))) return;
-    
+
     element.className = element.className.replace(
      getRegExpForClassName(className), ' ').strip();
-     
+
     return element;
   }
-  
+
   /**
    *  Element.toggleClassName(@element, className[, bool]) -> Element
    *
    *  Toggles the presence of CSS class `className` on `element`.
-   *  
+   *
    *  By default, `toggleClassName` will flip to the opposite state, but
    *  will use `bool` instead if it's given; `true` will add the class name
    *  and `false` will remove it.
    *
    *  ##### Examples
-   *  
+   *
    *      language: html
    *      <div id="mutsu" class="apple"></div>
    *
@@ -2522,31 +2536,31 @@
    *
    *      $('mutsu').hasClassName('fruit');
    *      // -> false
-   *      
+   *
    *      $('mutsu').toggleClassName('fruit');
    *      // -> Element
-   *      
+   *
    *      $('mutsu').hasClassName('fruit');
    *      // -> true
-   *  
+   *
    *      $('mutsu').toggleClassName('fruit', true);
    *      // -> Element (keeps the "fruit" class name that was already there)
   **/
   function toggleClassName(element, className, bool) {
     if (!(element = $(element))) return;
-    
+
     if (Object.isUndefined(bool))
       bool = !hasClassName(element, className);
-      
+
     var method = Element[bool ? 'addClassName' : 'removeClassName'];
     return method(element, className);
   }
-  
+
   var ATTRIBUTE_TRANSLATIONS = {};
-  
+
   // Test attributes.
   var classProp = 'className', forProp = 'for';
-  
+
   // Try "className" first (IE <8)
   DIV.setAttribute(classProp, 'x');
   if (DIV.className !== 'x') {
@@ -2555,7 +2569,7 @@
     if (DIV.className === 'x')
       classProp = 'class';
   }
-  
+
   var LABEL = document.createElement('label');
   LABEL.setAttribute(forProp, 'x');
   if (LABEL.htmlFor !== 'x') {
@@ -2564,30 +2578,30 @@
       forProp = 'htmlFor';
   }
   LABEL = null;
-  
+
   function _getAttr(element, attribute) {
     return element.getAttribute(attribute);
   }
-  
+
   function _getAttr2(element, attribute) {
     return element.getAttribute(attribute, 2);
   }
-  
+
   function _getAttrNode(element, attribute) {
     var node = element.getAttributeNode(attribute);
     return node ? node.value : '';
   }
-  
+
   function _getFlag(element, attribute) {
     return $(element).hasAttribute(attribute) ? attribute : null;
   }
-  
+
   // Test whether attributes like `onclick` have their values serialized.
   DIV.onclick = Prototype.emptyFunction;
   var onclickValue = DIV.getAttribute('onclick');
-  
+
   var _getEv;
-  
+
   // IE <8
   if (String(onclickValue).indexOf('{') > -1) {
     // intrinsic event attributes are serialized as `function { ... }`
@@ -2599,7 +2613,7 @@
       value = value.split('}')[0];
       return value.strip();
     };
-  } 
+  }
   // IE >=8
   else if (onclickValue === '') {
     // only function body is serialized
@@ -2609,7 +2623,7 @@
       return value.strip();
     };
   }
-  
+
   ATTRIBUTE_TRANSLATIONS.read = {
     names: {
       'class':     classProp,
@@ -2617,7 +2631,7 @@
       'for':       forProp,
       'htmlFor':   forProp
     },
-        
+
     values: {
       style: function(element) {
         return element.style.cssText.toLowerCase();
@@ -2627,7 +2641,7 @@
       }
     }
   };
-  
+
   ATTRIBUTE_TRANSLATIONS.write = {
     names: {
       className:   'class',
@@ -2635,31 +2649,31 @@
       cellpadding: 'cellPadding',
       cellspacing: 'cellSpacing'
     },
-    
+
     values: {
       checked: function(element, value) {
         element.checked = !!value;
       },
-      
+
       style: function(element, value) {
         element.style.cssText = value ? value : '';
       }
     }
   };
-  
+
   ATTRIBUTE_TRANSLATIONS.has = { names: {} };
-  
+
   Object.extend(ATTRIBUTE_TRANSLATIONS.write.names,
    ATTRIBUTE_TRANSLATIONS.read.names);
-   
+
   var CAMEL_CASED_ATTRIBUTE_NAMES = $w('colSpan rowSpan vAlign dateTime ' +
    'accessKey tabIndex encType maxLength readOnly longDesc frameBorder');
-   
+
   for (var i = 0, attr; attr = CAMEL_CASED_ATTRIBUTE_NAMES[i]; i++) {
     ATTRIBUTE_TRANSLATIONS.write.names[attr.toLowerCase()] = attr;
     ATTRIBUTE_TRANSLATIONS.has.names[attr.toLowerCase()]   = attr;
   }
-  
+
   // The rest of the oddballs.
   Object.extend(ATTRIBUTE_TRANSLATIONS.read.values, {
     href:        _getAttr2,
@@ -2687,10 +2701,10 @@
     onsubmit:    _getEv,
     onreset:     _getEv,
     onselect:    _getEv,
-    onchange:    _getEv    
+    onchange:    _getEv
   });
-  
-  
+
+
   Object.extend(methods, {
     identify:        identify,
     readAttribute:   readAttribute,
@@ -2701,64 +2715,64 @@
     removeClassName: removeClassName,
     toggleClassName: toggleClassName
   });
-  
-  
+
+
   // STYLES
   function normalizeStyleName(style) {
     if (style === 'float' || style === 'styleFloat')
       return 'cssFloat';
     return style.camelize();
   }
-  
+
   function normalizeStyleName_IE(style) {
     if (style === 'float' || style === 'cssFloat')
       return 'styleFloat';
     return style.camelize();
   }
 
-  /** 
+  /**
    *  Element.setStyle(@element, styles) -> Element
-   *  
+   *
    *  Modifies `element`'s CSS style properties. Styles are passed as a hash of
    *  property-value pairs in which the properties are specified in their
    *  camelized form.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      $(element).setStyle({
    *        backgroundColor: '#900',
    *        fontSize: '12px'
    *      });
    *      // -> Element
-   *  
+   *
    *  ##### Notes
-   *  
+   *
    *  The method transparently deals with browser inconsistencies for `float`
    *  (however, as `float` is a reserved keyword, you must either escape it or
    *  use `cssFloat` instead) and `opacity` (which accepts values between `0`
    *  -fully transparent- and `1` -fully opaque-). You can safely use either of
    *  the following across all browsers:
-   *  
+   *
    *      $(element).setStyle({
    *        cssFloat: 'left',
    *        opacity: 0.5
    *      });
    *      // -> Element
-   *      
+   *
    *      $(element).setStyle({
    *        'float': 'left', // notice how float is surrounded by single quotes
    *        opacity: 0.5
    *      });
    *      // -> Element
-   *  
+   *
    *  Not all CSS shorthand properties are supported. You may only use the CSS
    *  properties described in the
    *  [Document Object Model (DOM) Level 2 Style Specification](http://www.w3.org/TR/DOM-Level-2-Style/css.html#CSS-ElementCSSInlineStyle).
   **/
   function setStyle(element, styles) {
     element = $(element);
-    var elementStyle = element.style, match;
-    
+    var elementStyle = element.style;
+
     if (Object.isString(styles)) {
       // Set the element's CSS text directly.
       elementStyle.cssText += ';' + styles;
@@ -2768,7 +2782,7 @@
       }
       return element;
     }
-    
+
     for (var property in styles) {
       if (property === 'opacity') {
         Element.setOpacity(element, styles[property]);
@@ -2783,10 +2797,10 @@
         elementStyle[property] = value;
       }
     }
-    
-    return element;    
+
+    return element;
   }
-  
+
 
   /**
    *  Element.getStyle(@element, style) -> String | null
@@ -2802,26 +2816,26 @@
    *  (fully transparent) and `1` (fully opaque), position properties
    *  (`left`, `top`, `right` and `bottom`) and when getting the dimensions
    *  (`width` or `height`) of hidden elements.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      $(element).getStyle('font-size');
    *      // equivalent:
-   *      
+   *
    *      $(element).getStyle('fontSize');
    *      // -> '12px'
-   *  
+   *
    *  ##### Notes
-   *  
+   *
    *  Not all CSS shorthand properties are supported. You may only use the CSS
    *  properties described in the
    *  [Document Object Model (DOM) Level 2 Style Specification](http://www.w3.org/TR/DOM-Level-2-Style/css.html#CSS-ElementCSSInlineStyle).
-   *  
+   *
    *  Old versions of Internet Explorer return _literal_ values; other browsers
    *  return _computed_ values.
    *
    *  Consider the following HTML snippet:
-   *  
+   *
    *      language: html
    *      <style>
    *        #test {
@@ -2836,20 +2850,20 @@
    *      $('test').getStyle('margin-left');
    *      // -> '1em' in Internet Explorer,
    *      // -> '12px' elsewhere.
-   *  
+   *
    *
    *  Safari returns `null` for *any* non-inline property if the element is
    *  hidden (has `display` set to `'none'`).
    *
    *  ##### Caveats
-   *  
+   *
    *  Early versions of Prototype attempted to "fix" this behavior for
    *  certain properties. A few examples:
-   *  
+   *
    *  1. Reading and writing the CSS `opacity` property works exactly like
    *     calling [[Element.getOpacity]] and [[Element.setOpacity]]
    *     respectively. This lets us pretend that IE didn't have a
-   *     properietary way to set opacity in versions 6-7.
+   *     proprietary way to set opacity in versions 6-7.
    *  2. Browsers disagree on how to report certain properties of hidden
    *     elements (i.e., `display: none`). Opera, for instance, says that a
    *     hidden element has a `width` of `0px`. It's an arguable point, but
@@ -2861,11 +2875,13 @@
    *     a different unit. It does this by treating `width` like `offsetWidth`
    *     and `height` like `offsetHeight`. This is often the incorrect
    *     measurement, but it's a mistake we're stuck with for
-   *     backward-compatibility. **If you're trying to measure an element's 
+   *     backward-compatibility. **If you're trying to measure an element's
    *     dimensions, don't use `getStyle`; use [[Element.measure]] instead.**
-   *  
+   *
   **/
-  function getStyle(element, style) {
+  function getStyle(element, style) { // FIX
+    if (style === 'opacity') return getOpacity(element);
+
     element = $(element);
     style = normalizeStyleName(style);
 
@@ -2876,82 +2892,80 @@
       var css = document.defaultView.getComputedStyle(element, null);
       value = css ? css[style] : null;
     }
-    
-    if (style === 'opacity') return value ? parseFloat(value) : 1.0;
+
     return value === 'auto' ? null : value;
   }
-  
+
   function getStyle_Opera(element, style) {
     switch (style) {
       case 'height': case 'width':
         // returns '0px' for hidden elements; we want it to return null
         if (!Element.visible(element)) return null;
-        
+
         // Certain versions of Opera return border-box dimensions instead of
         // content-box dimensions, so we need to determine if we should
         // subtract padding and borders from the value.
         var dim = parseInt(getStyle(element, style), 10);
-        
+
         if (dim !== element['offset' + style.capitalize()])
           return dim + 'px';
-       
+
         return Element.measure(element, style);
-        
+
       default: return getStyle(element, style);
     }
   }
-  
+
   function getStyle_IE(element, style) {
+    if (style === 'opacity') return getOpacity_IE(element);
+
     element = $(element);
     style = normalizeStyleName_IE(style);
 
     // Try inline styles first.
-    var value = element.style[style];    
+    var value = element.style[style];
     if (!value && element.currentStyle) {
       // Reluctantly retrieve the current style.
       value = element.currentStyle[style];
     }
-    
-    if (style === 'opacity')
-      return getOpacity_IE(element);
-      
+
     if (value === 'auto') {
       // If we need a dimension, return null for hidden elements, but return
       // pixel values for visible elements.
-      if ((style === 'width' || style === 'height') && Element.visible(element))
+      // maybe also style=='left' || style=='top'
+      if ((style === 'width' || style === 'height') && (Element.getStyle(element, 'display') != 'none')) // FIX
         return Element.measure(element, style) + 'px';
       return null;
     }
-    
-    return value;    
+
+    return value;
   }
-  
+
   function stripAlphaFromFilter_IE(filter) {
     return (filter || '').replace(/alpha\([^\)]*\)/gi, '');
   }
-  
-  function hasLayout_IE(element) {
-    if (!element.currentStyle.hasLayout)
-      element.style.zoom = 1;
-    return element;
-  }
 
+  // Opacity feature test borrowed from Modernizr.
+  var STANDARD_CSS_OPACITY_SUPPORTED = (function() {
+    DIV.style.cssText = "opacity:.55";
+    return /^0.55/.test(DIV.style.opacity);
+  })();
 
-  /** 
+  /**
    *  Element.setOpacity(@element, opacity) -> [Element...]
-   *  
+   *
    *  Sets the visual opacity of an element while working around inconsistencies
    *  in various browsers. The `opacity` argument should be a floating point
    *  number, where the value of `0` is fully transparent and `1` is fully opaque.
-   *  
+   *
    *  [[Element.setStyle]] method uses [[Element.setOpacity]] internally when needed.
-   *  
+   *
    *  ##### Examples
-   *  
+   *
    *      var element = $('myelement');
    *      // set to 50% transparency
    *      element.setOpacity(0.5);
-   *      
+   *
    *      // these are equivalent, but allow for setting more than
    *      // one CSS property at once:
    *      element.setStyle({ opacity: 0.5 });
@@ -2960,71 +2974,93 @@
   function setOpacity(element, value) {
     element = $(element);
     if (value == 1 || value === '') value = '';
-    else if (value < 0.00001) value = 0;    
-    element.style.opacity = value;    
+    else if (value < 0.00001) value = 0;
+    element.style.opacity = value;
     return element;
   }
-  
-  function setOpacity_IE(element, value) {
-    element = hasLayout_IE($(element));
-    var filter = Element.getStyle(element, 'filter'),
-     style = element.style;     
-     
+
+  // The IE versions of `setOpacity` and `getOpacity` are aware of both
+  // the standard approach (an `opacity` property in CSS) and the old-style
+  // IE approach (a proprietary `filter` property). They are written to
+  // prefer the standard approach unless it isn't supported.
+  var setOpacity_IE = STANDARD_CSS_OPACITY_SUPPORTED ? setOpacity : function(element, value) { // FIX
+    element = $(element);
+    var style = element.style;
+    if (!element.currentStyle || !element.currentStyle.hasLayout)
+      style.zoom = 1;
+
+    var filter = Element.getStyle(element, 'filter');
+
     if (value == 1 || value === '') {
       // Remove the `alpha` filter from IE's `filter` CSS property. If there
       // is anything left after removal, put it back where it was; otherwise
       // remove the property.
       filter = stripAlphaFromFilter_IE(filter);
       if (filter) style.filter = filter;
-      else style.removeAttribute('filter');      
+      else style.removeAttribute('filter');
       return element;
     }
-    
+
     if (value < 0.00001) value = 0;
-        
-    style.filter = stripAlphaFromFilter_IE(filter) + 
+
+    style.filter = stripAlphaFromFilter_IE(filter) +
      'alpha(opacity=' + (value * 100) + ')';
-     
+
     return element;
-  }
-  
-  
+  };
+
+
   /**
    *  Element.getOpacity(@element) -> String | null
    *
    *  Returns the opacity of the element.
   **/
-  function getOpacity(element) {
-    return Element.getStyle(element, 'opacity');
+  function getOpacity(element) { // FIX
+    element = $(element);
+    // Try inline styles first.
+    var value = element.style.opacity;
+    if (!value || value === 'auto') {
+      // Reluctantly retrieve the computed style.
+      var css = document.defaultView.getComputedStyle(element, null);
+      value = css ? css.opacity : null;
+    }
+    return value ? parseFloat(value) : 1.0;
   }
-  
-  function getOpacity_IE(element) {
+
+  // Prefer the standard CSS approach unless it's not supported.
+  var getOpacity_IE = STANDARD_CSS_OPACITY_SUPPORTED ? getOpacity : function(element) {
     var filter = Element.getStyle(element, 'filter');
     if (filter.length === 0) return 1.0;
     var match = (filter || '').match(/alpha\(opacity=(.*)\)/);
-    if (match[1]) return parseFloat(match[1]) / 100;
+    if (match && match[1]) return parseFloat(match[1]) / 100;
     return 1.0;
-  }
-  
-  
+  };
+
+
   Object.extend(methods, {
     setStyle:   setStyle,
     getStyle:   getStyle,
     setOpacity: setOpacity,
     getOpacity: getOpacity
   });
-  
-  if ('styleFloat' in DIV.style) {
+
+  if (Prototype.Browser.Opera) { // FIX
+    // Opera also has 'styleFloat' in DIV.style
+    methods.getStyle = getStyle_Opera;
+  } else if ('styleFloat' in DIV.style) {
     methods.getStyle = getStyle_IE;
     methods.setOpacity = setOpacity_IE;
     methods.getOpacity = getOpacity_IE;
   }
-  
+
+  /*if (!('opacity' in DIV.style) && ('filter' in DIV.style)) { // FIX
+    methods.setOpacity = setOpacity_IE;
+    methods.getOpacity = getOpacity_IE;
+  }*/
+
   // STORAGE
-  var UID = 0;
-  
   GLOBAL.Element.Storage = { UID: 1 };
-  
+
   function getUniqueElementID(element) {
     if (element === window) return 0;
 
@@ -3034,7 +3070,7 @@
       element._prototypeUID = Element.Storage.UID++;
     return element._prototypeUID;
   }
-  
+
   // In Internet Explorer, DOM nodes have a `uniqueID` property. Saves us
   // from inventing our own.
   function getUniqueElementID_IE(element) {
@@ -3043,31 +3079,34 @@
     if (element == document) return 1;
     return element.uniqueID;
   }
-  
+
   var HAS_UNIQUE_ID_PROPERTY = ('uniqueID' in DIV);
   if (HAS_UNIQUE_ID_PROPERTY)
     getUniqueElementID = getUniqueElementID_IE;
-  
+
   /**
    *  Element.getStorage(@element) -> Hash
    *
    *  Returns the [[Hash]] object that stores custom metadata for this element.
-  **/  
+  **/
   function getStorage(element) {
     if (!(element = $(element))) return;
-    
+
     var uid = getUniqueElementID(element);
-    
+
     if (!Element.Storage[uid])
       Element.Storage[uid] = $H();
-      
+
     return Element.Storage[uid];
   }
-  
+
   /**
    *  Element.store(@element, key, value) -> Element
+   *  Element.store(@element, object) -> Element
    *
-   *  Stores a key/value pair of custom metadata on the element.
+   *  Stores a key/value pair of custom metadata on the element. If it is
+   *  given one argument instead of two, it treats that argument as an object
+   *  of key/value pairs, and stores _each_ pair as element metadata.
    *
    *  The metadata can later be retrieved with [[Element.retrieve]].
   **/
@@ -3082,7 +3121,7 @@
     }
     return element;
   }
-  
+
   /**
    *  Element.retrieve(@element, key[, defaultValue]) -> ?
    *
@@ -3094,27 +3133,27 @@
   function retrieve(element, key, defaultValue) {
     if (!(element = $(element))) return;
     var storage = getStorage(element), value = storage.get(key);
-    
+
     if (Object.isUndefined(value)) {
       storage.set(key, defaultValue);
       value = defaultValue;
     }
-    
+
     return value;
   }
-  
-  
+
+
   Object.extend(methods, {
     getStorage: getStorage,
     store:      store,
     retrieve:   retrieve
   });
-  
-  
+
+
   // ELEMENT EXTENSION
   var Methods = {}, ByTag = Element.Methods.ByTag,
    F = Prototype.BrowserFeatures;
-  
+
   // Handle environments which support extending element prototypes
   // but don't expose the standard class name.
   if (!F.ElementExtensions && ('__proto__' in DIV)) {
@@ -3122,7 +3161,7 @@
     GLOBAL.HTMLElement.prototype = DIV['__proto__'];
     F.ElementExtensions = true;
   }
-  
+
   // Certain oddball element types can't be extended in IE8.
   function checkElementPrototypeDeficiency(tagName) {
     if (typeof window.Element === 'undefined') return false;
@@ -3136,13 +3175,13 @@
       el = null;
       return isBuggy;
     }
-    
-    return false;    
+
+    return false;
   }
-  
-  var HTMLOBJECTELEMENT_PROTOTYPE_BUGGY = 
+
+  var HTMLOBJECTELEMENT_PROTOTYPE_BUGGY =
    checkElementPrototypeDeficiency('object');
-  
+
   function extendElementWith(element, methods) {
     for (var property in methods) {
       var value = methods[property];
@@ -3150,14 +3189,10 @@
         element[property] = value.methodize();
     }
   }
-  
+
   // Keeps track of the UIDs of extended elements.
   var EXTENDED = {};
-  function elementIsExtended(element) {
-    var uid = getUniqueElementID(element);
-    return (uid in EXTENDED);
-  }
-  
+
   /**
    *  Element.extend(element) -> Element
    *
@@ -3182,35 +3217,42 @@
    *  with the methods from `Form.Element.Methods`. If it is a `form` element, it
    *  will also be extended with the methods from `Form.Methods`.
   **/
-  function extend(element) {
-    if (!element || elementIsExtended(element)) return element;
+  function extend(element) { // FIX
+    if (!element) return element;
     if (element.nodeType !== Node.ELEMENT_NODE || element == window)
       return element;
-      
+
+    var uid = getUniqueElementID(element);
+    if (uid in EXTENDED) return element;
+
     var methods = Object.clone(Methods),
      tagName = element.tagName.toUpperCase();
-     
+
     // Add methods for specific tags.
     if (ByTag[tagName]) Object.extend(methods, ByTag[tagName]);
-    
+
     extendElementWith(element, methods);
-    EXTENDED[getUniqueElementID(element)] = true;
+    EXTENDED[uid] = true;
     return element;
   }
-  
+
   // Because of the deficiency mentioned above, IE8 needs a very thin version
   // of Element.extend that acts like Prototype.K _except_ when the element
   // is one of the problematic types.
-  function extend_IE8(element) {
-    if (!element || elementIsExtended(element)) return element;
-    
+  function extend_IE8(element) { // FIX
+    if (!element) return element;
+
     var t = element.tagName;
     if (t && (/^(?:object|applet|embed)$/i.test(t))) {
+      var uid = getUniqueElementID(element);
+      if (uid in EXTENDED) return element;
+
       extendElementWith(element, Element.Methods);
       extendElementWith(element, Element.Methods.Simulated);
       extendElementWith(element, Element.Methods.ByTag[t.toUpperCase()]);
+      EXTENDED[uid] = true;
     }
-    
+
     return element;
   }
 
@@ -3219,13 +3261,13 @@
   if (F.SpecificElementExtensions) {
     extend = HTMLOBJECTELEMENT_PROTOTYPE_BUGGY ? extend_IE8 : Prototype.K;
   }
-  
+
   function addMethodsToTagName(tagName, methods) {
     tagName = tagName.toUpperCase();
     if (!ByTag[tagName]) ByTag[tagName] = {};
     Object.extend(ByTag[tagName], methods);
   }
-  
+
   function mergeMethods(destination, methods, onlyIfAbsent) {
     if (Object.isUndefined(onlyIfAbsent)) onlyIfAbsent = false;
     for (var property in methods) {
@@ -3235,7 +3277,7 @@
         destination[property] = value.methodize();
     }
   }
-  
+
   function findDOMClass(tagName) {
     var klass;
     var trans = {
@@ -3258,11 +3300,11 @@
 
     var element = document.createElement(tagName),
      proto = element['__proto__'] || element.constructor.prototype;
-        
+
     element = null;
     return proto;
   }
-  
+
   /**
    *  Element.addMethods(methods) -> undefined
    *  Element.addMethods(tagName, methods) -> undefined
@@ -3389,13 +3431,13 @@
   **/
   function addMethods(methods) {
     if (arguments.length === 0) addFormMethods();
-    
+
     if (arguments.length === 2) {
       // Tag names have been specified.
       var tagName = methods;
       methods = arguments[1];
     }
-    
+
     if (!tagName) {
       Object.extend(Element.Methods, methods || {});
     } else {
@@ -3406,15 +3448,15 @@
         addMethodsToTagName(tagName, methods);
       }
     }
-    
+
     var ELEMENT_PROTOTYPE = window.HTMLElement ? HTMLElement.prototype :
      Element.prototype;
-     
+
     if (F.ElementExtensions) {
       mergeMethods(ELEMENT_PROTOTYPE, Element.Methods);
       mergeMethods(ELEMENT_PROTOTYPE, Element.Methods.Simulated, true);
     }
-    
+
     if (F.SpecificElementExtensions) {
       for (var tag in Element.Methods.ByTag) {
         var klass = findDOMClass(tag);
@@ -3422,24 +3464,24 @@
         mergeMethods(klass.prototype, ByTag[tag]);
       }
     }
-    
+
     Object.extend(Element, Element.Methods);
     Object.extend(Element, Element.Methods.Simulated);
     delete Element.ByTag;
     delete Element.Simulated;
-    
+
     Element.extend.refresh();
-    
+
     // We need to replace the element creation cache because the nodes in the
     // cache now have stale versions of the element methods.
     ELEMENT_CACHE = {};
   }
-  
+
   Object.extend(GLOBAL.Element, {
     extend:     extend,
     addMethods: addMethods
   });
-  
+
   if (extend === Prototype.K) {
     GLOBAL.Element.extend.refresh = Prototype.emptyFunction;
   } else {
@@ -3452,7 +3494,7 @@
       EXTENDED = {};
     };
   }
-  
+
   function addFormMethods() {
     // Add relevant element methods from the forms API.
     Object.extend(Form, Form.Methods);
@@ -3467,5 +3509,46 @@
   }
 
   Element.addMethods(methods);
-  
+
+  // Prevent IE leaks on DIV and ELEMENT_CACHE
+  function destroyCache_IE() {
+    DIV = null;
+    ELEMENT_CACHE = null;
+  }
+
+  if (window.attachEvent)
+    window.attachEvent('onunload', destroyCache_IE);
+
 })(this);
+
+/*--------------------------------------------------------------------------*/
+
+/** section: DOM
+ *  class Element
+ *
+ *  The [[Element]] object provides a variety of powerful DOM methods for
+ *  interacting with DOM elements &mdash; creating them, updating them,
+ *  traversing them, etc. You can access these either as methods of [[Element]]
+ *  itself, passing in the element to work with as the first argument, or as
+ *  methods on extended element *instances*:
+ *
+ *      // Using Element:
+ *      Element.addClassName('target', 'highlighted');
+ *
+ *      // Using an extended element instance:
+ *      $('target').addClassName('highlighted');
+ *
+ *  [[Element]] is also a constructor for building element instances from scratch,
+ *  see [`new Element`](#new-constructor) for details.
+ *
+ *  Most [[Element]] methods return the element instance, so that you can chain
+ *  them easily:
+ *
+ *      $('message').addClassName('read').update('I read this message!');
+ *
+ *  ##### More Information
+ *
+ *  For more information about extended elements, check out ["How Prototype
+ *  extends the DOM"](http://prototypejs.org/learn/extensions), which will walk
+ *  you through the inner workings of Prototype's DOM extension mechanism.
+**/

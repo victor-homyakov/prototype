@@ -10,7 +10,7 @@
  *  In the optional `options` hash, you usually provide an `onComplete` and/or
  *  `onSuccess` callback, unless you're in the edge case where you're getting a
  *  JavaScript-typed response, that will automatically be `eval`'d.
- *  
+ *
  *  For a full list of common options and callbacks, see "Ajax options" heading
  *  of the [[Ajax section]].
  *
@@ -23,20 +23,20 @@
  *      });
  *
  *  ##### Request life-cycle
- *  
+ *
  *  Underneath our nice requester objects lies, of course, `XMLHttpRequest`. The
  *  defined life-cycle is as follows:
- *  
+ *
  *  1. Created
  *  2. Initialized
  *  3. Request sent
  *  4. Response being received (can occur many times, as packets come in)
  *  5. Response received, request complete
- *  
+ *
  *  As you can see under the "Ajax options" heading of the [[Ajax section]],
  *  Prototype's AJAX objects define a whole slew of callbacks, which are
  *  triggered in the following order:
- *  
+ *
  *  1. `onCreate` (this is actually a callback reserved to [[Ajax.Responders]])
  *  2. `onUninitialized` (maps on Created)
  *  3. `onLoading` (maps on Initialized)
@@ -44,28 +44,28 @@
  *  5. `onInteractive` (maps on Response being received)
  *  6. `on`*XYZ* (numerical response status code), onSuccess or onFailure (see below)
  *  7. `onComplete`
- *  
+ *
  *  The two last steps both map on *Response received*, in that order. If a
  *  status-specific callback is defined, it gets invoked. Otherwise, if
  *  `onSuccess` is defined and the response is deemed a success (see below), it
  *  is invoked. Otherwise, if `onFailure` is defined and the response is *not*
- *  deemed a sucess, it is invoked. Only after that potential first callback is
+ *  deemed a success, it is invoked. Only after that potential first callback is
  *  `onComplete` called.
- *  
+ *
  *  ##### A note on portability
- *  
+ *
  *  Depending on how your browser implements `XMLHttpRequest`, one or more
  *  callbacks may never be invoked. In particular, `onLoaded` and
  *  `onInteractive` are not a 100% safe bet so far. However, the global
  *  `onCreate`, `onUninitialized` and the two final steps are very much
  *  guaranteed.
- *  
+ *
  *  ##### `onSuccess` and `onFailure`, the under-used callbacks
- *  
+ *
  *  Way too many people use [[Ajax.Request]] in a similar manner to raw XHR,
  *  defining only an `onComplete` callback even when they're only interested in
  *  "successful" responses, thereby testing it by hand:
- *  
+ *
  *      // This is too bad, there's better!
  *      new Ajax.Request('/your/url', {
  *        onComplete: function(response) {
@@ -73,25 +73,25 @@
  *            // yada yada yada
  *        }
  *      });
- *  
+ *
  *  First, as described below, you could use better "success" detection: success
  *  is generally defined, HTTP-wise, as either no response status or a "2xy"
  *  response status (e.g., 201 is a success, too). See the example below.
- *  
+ *
  *  Second, you could dispense with status testing altogether! Prototype adds
  *  callbacks specific to success and failure, which we listed above. Here's
  *  what you could do if you're only interested in success, for instance:
- *  
+ *
  *      new Ajax.Request('/your/url', {
  *        onSuccess: function(response) {
  *            // yada yada yada
  *        }
  *      });
- *  
+ *
  *  ##### Automatic JavaScript response evaluation
  *
  *  If an Ajax request follows the _same-origin policy_ **and** its response
- *  has a JavaScript-related `Content-type`, the content of the `responseText`
+ *  has a JavaScript-related `Content-Type`, the content of the `responseText`
  *  property will automatically be passed to `eval`.
  *
  *  In other words: you don't even need to provide a callback to leverage
@@ -225,7 +225,7 @@ Ajax.Request = Class.create(Ajax.Base, {
   onStateChange: function() {
     var readyState = this.transport.readyState;
     if (readyState > 1 && !((readyState == 4) && this._complete))
-      this.respondToReadyState(this.transport.readyState);
+      this.respondToReadyState(readyState);
   },
 
   setRequestHeaders: function() {
@@ -236,7 +236,7 @@ Ajax.Request = Class.create(Ajax.Base, {
     };
 
     if (this.method == 'post') {
-      headers['Content-type'] = this.options.contentType +
+      headers['Content-Type'] = this.options.contentType +
         (this.options.encoding ? '; charset=' + this.options.encoding : '');
 
       /* Force "Connection: close" for older Mozilla browsers to work
@@ -252,15 +252,18 @@ Ajax.Request = Class.create(Ajax.Base, {
     if (typeof this.options.requestHeaders == 'object') {
       var extras = this.options.requestHeaders;
 
+      // if has push() then process as array, otherwise as object
       if (Object.isFunction(extras.push))
         for (var i = 0, length = extras.length; i < length; i += 2)
-          headers[extras[i]] = extras[i+1];
+          headers[extras[i]] = extras[i + 1];
       else
-        $H(extras).each(function(pair) { headers[pair.key] = pair.value });
+        $H(extras).each(function(pair) { headers[pair.key] = pair.value; });
     }
 
+    // skip null or undefined values
     for (var name in headers)
-      this.transport.setRequestHeader(name, headers[name]);
+      if (headers[name] != null)
+        this.transport.setRequestHeader(name, headers[name]);
   },
 
   /**
@@ -278,7 +281,7 @@ Ajax.Request = Class.create(Ajax.Base, {
       // IE sometimes returns 1223 for a 204 response.
       if (this.transport.status === 1223) return 204;
       return this.transport.status || 0;
-    } catch (e) { return 0 }
+    } catch (e) { return 0; }
   },
 
   respondToReadyState: function(readyState) {
@@ -294,7 +297,7 @@ Ajax.Request = Class.create(Ajax.Base, {
         this.dispatchException(e);
       }
 
-      var contentType = response.getHeader('Content-type');
+      var contentType = response.getHeader('Content-Type');
       if (this.options.evalJS == 'force'
           || (this.options.evalJS && this.isSameOrigin() && contentType
           && contentType.match(/^\s*(text|application)\/(x-)?(java|ecma)script(;.*)?\s*$/i)))

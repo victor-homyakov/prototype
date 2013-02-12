@@ -30,14 +30,14 @@
 /**
  *  Ajax.Response#responseXML -> document | null
  *
- *  The XML body of the response if the `Content-type` of the request is set
+ *  The XML body of the response if the `Content-Type` of the request is set
  *  to `application/xml`; `null` otherwise.
 **/
 
 /**
  *  Ajax.Response#responseJSON -> Object | Array | null
  *
- *  The JSON body of the response if the `Content-type` of the request is set
+ *  The JSON body of the response if the `Content-Type` of the request is set
  *  to `application/json`; `null` otherwise.
 **/
 
@@ -68,17 +68,19 @@ Ajax.Response = Class.create({
     var transport  = this.transport  = request.transport,
         readyState = this.readyState = transport.readyState;
 
-    if ((readyState > 2 && !Prototype.Browser.IE) || readyState == 4) {
-      this.status       = this.getStatus();
-      this.statusText   = this.getStatusText();
-      this.responseText = String.interpret(transport.responseText);
-      this.headerJSON   = this._getHeaderJSON();
-    }
+    if ((readyState > 2 && !Prototype.Browser.IE) || readyState == 4) { // FIX
+      this.status     = this.getStatus();
+      this.statusText = this.getStatusText();
+      this.headerJSON = this._getHeaderJSON();
 
-    if (readyState == 4) {
-      var xml = transport.responseXML;
-      this.responseXML  = Object.isUndefined(xml) ? null : xml;
-      this.responseJSON = this._getResponseJSON();
+      if (readyState == 4 || request.options.onInteractive)
+        this.responseText = String.interpret(transport.responseText);
+
+      if (readyState == 4) {
+        var xml = transport.responseXML;
+        this.responseXML  = Object.isUndefined(xml) ? null : xml;
+        this.responseJSON = this._getResponseJSON();
+      }
     }
   },
 
@@ -101,7 +103,7 @@ Ajax.Response = Class.create({
   getStatusText: function() {
     try {
       return this.transport.statusText || '';
-    } catch (e) { return '' }
+    } catch (e) { return ''; }
   },
 
   /**
@@ -121,7 +123,7 @@ Ajax.Response = Class.create({
   getAllHeaders: function() {
     try {
       return this.getAllResponseHeaders();
-    } catch (e) { return null }
+    } catch (e) { return null; }
   },
 
   /**
@@ -151,7 +153,23 @@ Ajax.Response = Class.create({
   _getHeaderJSON: function() {
     var json = this.getHeader('X-JSON');
     if (!json) return null;
-    json = decodeURIComponent(escape(json));
+
+    try {
+      // Browsers expect HTTP headers to be ASCII and nothing else. Running
+      // them through `decodeURIComponent` processes them with the page's
+      // specified encoding.
+      json = decodeURIComponent(escape(json));
+    } catch(e) {
+      // Except Chrome doesn't seem to need this, and calling
+      // `decodeURIComponent` on text that's already in the proper encoding
+      // will throw a `URIError`. The ugly solution is to assume that a
+      // `URIError` raised here signifies that the text is, in fact, already
+      // in the correct encoding, and treat the failure as a good sign.
+      //
+      // This is ugly, but so too is sending extended characters in an HTTP
+      // header with no spec to back you up.
+    }
+
     try {
       return json.evalJSON(this.request.options.sanitizeJSON ||
         !this.request.isSameOrigin());
@@ -163,7 +181,7 @@ Ajax.Response = Class.create({
   _getResponseJSON: function() {
     var options = this.request.options;
     if (!options.evalJSON || (options.evalJSON != 'force' &&
-      !(this.getHeader('Content-type') || '').include('application/json')) ||
+      !(this.getHeader('Content-Type') || '').include('application/json')) ||
         this.responseText.blank())
           return null;
     try {

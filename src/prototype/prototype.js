@@ -84,7 +84,7 @@ var Prototype = {
       WebKit:         ua.indexOf('AppleWebKit/') > -1,
       Gecko:          ua.indexOf('Gecko') > -1 && ua.indexOf('KHTML') === -1,
       MobileSafari:   /Apple.*Mobile/.test(ua)
-    }
+    };
   })(),
 
   /**
@@ -139,7 +139,7 @@ var Prototype = {
     })()
   },
 
-  ScriptFragment: '<script[^>]*>([\\S\\s]*?)<\/script>',
+  ScriptFragment: '<script[^>]*>([\\S\\s]*?)<\/script\\s*>',
   JSONFilter: /^\/\*-secure-([\s\S]*)\*\/\s*$/,
 
   /**
@@ -176,7 +176,7 @@ var Prototype = {
    *      Prototype.K(Prototype.K);
    *      // -> Prototype.K
   **/
-  K: function(x) { return x }
+  K: function(x) { return x; }
 };
 
 if (Prototype.Browser.MobileSafari)
