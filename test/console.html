@@ -27,7 +27,7 @@
         },
         
         log: function(type, message) {
-          new Insertion.Bottom(this.element, 
+          Element.insert(this.element, 
             '<tr class="' + type + '"><td>' +
             message.escapeHTML() + '</td></tr>');
           Element.scrollTo(this.form);
