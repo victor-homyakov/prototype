@@ -1,5 +1,5 @@
 new Test.Unit.Runner({
-  
+
   testInclude: function() {
     this.assert(!$R(0, 0, true).include(0));
     this.assert($R(0, 0, false).include(0));
@@ -27,6 +27,19 @@ new Test.Unit.Runner({
     });
 
     this.assertEnumEqual([0, 1, 2, 3], results);
+
+    results = [];
+    $R(2, 4, true).each(function(value, index) {
+      results.push(index);
+    });
+    this.assertEnumEqual([0, 1], results);
+  },
+
+  testInject: function() {
+    var result = $R(10, 13).inject('Range', function(m, v, i) {
+      return m + '(' + i + ':' + v + ')';
+    });
+    this.assertEqual('Range(0:10)(1:11)(2:12)(3:13)', result);
   },
 
   testAny: function() {
@@ -51,7 +64,7 @@ new Test.Unit.Runner({
     this.assertEnumEqual([-3, -2, -1, 0, 1, 2], $R(-3, 3, true).toArray());
     this.assertEnumEqual([-3, -2, -1, 0, 1, 2, 3], $R(-3, 3, false).toArray());
   },
-  
+
   testDefaultsToNotExclusive: function() {
     this.assertEnumEqual($R(-3,3), $R(-3,3,false));
   }
