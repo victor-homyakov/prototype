@@ -57,7 +57,7 @@
    *
    *      // Note quite OOP-like...
    *      Element.hide('itemId');
-   *      // A cleaner feel, thanks to guaranted extension
+   *      // A cleaner feel, thanks to guaranteed extension
    *      $('itemId').hide();
    *
    *  However, when using iterators, leveraging the [[$]] function makes for
