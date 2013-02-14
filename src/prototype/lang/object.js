@@ -433,6 +433,11 @@
    *      //-> false
   **/
   function isElement(object) {
+    // FIXME performance: first check for typeof to avoid useless conversion to object
+    // inspired by http://bugs.jquery.com/ticket/13076
+    // http://jsperf.com/iselement/3
+    // return !!object && typeof object === "object" && object.nodeType === 1;
+    // return Type(object) === OBJECT_TYPE && object.nodeType === 1;
     return !!(object && object.nodeType == 1);
   }
 
@@ -522,6 +527,11 @@
    *      //-> false
   **/
   function isString(object) {
+    // FIXME performance: first check for typeof to avoid useless conversion to object
+    // inspired by http://bugs.jquery.com/ticket/13076
+    // http://jsperf.com/isstring-performance
+    // http://jsperf.com/getelement-perf/3
+    // return typeof object === 'string' || _toString.call(object) === STRING_CLASS;
     return _toString.call(object) === STRING_CLASS;
   }
 
