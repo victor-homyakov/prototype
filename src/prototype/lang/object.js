@@ -426,18 +426,17 @@
    *      Object.isElement(document.createElement('div'));
    *      //-> true
    *
-   *      Object.isElement($('id_of_an_exiting_element'));
+   *      Object.isElement($('id_of_an_existing_element'));
    *      //-> true
    *
    *      Object.isElement(document.createTextNode('foo'));
    *      //-> false
   **/
   function isElement(object) {
-    // FIXME performance: first check for typeof to avoid useless conversion to object
+    // FIXME performance: use typeof to avoid conversion of primitive to object
     // inspired by http://bugs.jquery.com/ticket/13076
     // http://jsperf.com/iselement/3
     // return !!object && typeof object === "object" && object.nodeType === 1;
-    // return Type(object) === OBJECT_TYPE && object.nodeType === 1;
     return !!(object && object.nodeType == 1);
   }
 
@@ -527,12 +526,11 @@
    *      //-> false
   **/
   function isString(object) {
-    // FIXME performance: first check for typeof to avoid useless conversion to object
+    // performance: use typeof to avoid conversion of primitive to object
     // inspired by http://bugs.jquery.com/ticket/13076
     // http://jsperf.com/isstring-performance
     // http://jsperf.com/getelement-perf/3
-    // return typeof object === 'string' || _toString.call(object) === STRING_CLASS;
-    return _toString.call(object) === STRING_CLASS;
+    return typeof object === 'string' || _toString.call(object) === STRING_CLASS;
   }
 
   /**
