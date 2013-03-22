@@ -1162,6 +1162,27 @@ new Test.Unit.Runner({
     this.assertEqual('26',        p.readAttribute('age'));
   },
 
+  testElementHtml5Attributes: function() {
+    var elements = $("html5attributes").immediateDescendants();
+    this.assertEnumEqual(['true', 'false', null], elements.invoke('readAttribute', 'contenteditable'),
+        'Initial contenteditable values');
+
+    this.assertEnumEqual(['true', 'false', null], elements.invoke('readAttribute', 'draggable'),
+        'Initial draggable values');
+
+    elements.invoke('writeAttribute', 'draggable', 'false');
+    this.assertEnumEqual(['false', 'false', 'false'], elements.invoke('readAttribute', 'draggable'),
+        'draggable=false values');
+
+    elements.invoke('writeAttribute', 'draggable', 'true');
+    this.assertEnumEqual(['true', 'true', 'true'], elements.invoke('readAttribute', 'draggable'),
+        'draggable=true values');
+
+    elements.invoke('writeAttribute', 'draggable', null);
+    this.assertEnumEqual([null, null, null], elements.invoke('readAttribute', 'draggable'),
+        'draggable=null values');
+  },
+
   testElementHasAttribute: function() {
     var label = $('write_attribute_label');
     this.assertIdentical(true,  label.hasAttribute('for'));
