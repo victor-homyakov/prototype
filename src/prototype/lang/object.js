@@ -55,13 +55,12 @@
     return true;
   })();
 
-  function Type(o) {
+  function type(o) {
     switch(o) {
       case null: return NULL_TYPE;
       case (void 0): return UNDEFINED_TYPE;
     }
-    var type = typeof o;
-    switch(type) {
+    switch(typeof o) {
       case 'boolean': return BOOLEAN_TYPE;
       case 'number':  return NUMBER_TYPE;
       case 'string':  return STRING_TYPE;
@@ -162,7 +161,7 @@
 
   function Str(key, holder, stack) {
     var value = holder[key];
-    if (Type(value) === OBJECT_TYPE && typeof value.toJSON === 'function') {
+    if (type(value) === OBJECT_TYPE && typeof value.toJSON === 'function') {
       value = value.toJSON(key);
     }
 
@@ -181,8 +180,7 @@
       case false: return 'false';
     }
 
-    var type = typeof value;
-    switch (type) {
+    switch (typeof value) {
       case 'string':
         return value.inspect(true);
       case 'number':
@@ -328,7 +326,7 @@
    *      // -> ['name', 'version']
   **/
   function keys(object) {
-    if (Type(object) !== OBJECT_TYPE) { throw new TypeError(); }
+    if (type(object) !== OBJECT_TYPE) { throw new TypeError(); }
     var results = [];
     for (var property in object) {
       if (_hasOwnProperty.call(object, property))
@@ -505,7 +503,10 @@
    *      //-> false
   **/
   function isFunction(object) {
-    return _toString.call(object) === FUNCTION_CLASS;
+    // performance: use typeof to avoid conversion of primitive to object
+    // http://jsperf.com/proto-isfunction-performance
+    var type = typeof object;
+    return type === 'function' || type === 'object' && _toString.call(object) === FUNCTION_CLASS;
   }
 
   /**
@@ -551,7 +552,9 @@
    *      //-> false
   **/
   function isNumber(object) {
-    return _toString.call(object) === NUMBER_CLASS;
+    // performance: use typeof to avoid conversion of primitive to object
+    // http://jsperf.com/isnumber-performance
+    return typeof object === 'number' || _toString.call(object) === NUMBER_CLASS;
   }
 
   /**
@@ -603,6 +606,7 @@
   }
 
   extend(Object, {
+    type:          type,
     extend:        extend,
     inspect:       inspect,
     toJSON:        NATIVE_JSON_STRINGIFY_SUPPORT ? stringify : toJSON,
