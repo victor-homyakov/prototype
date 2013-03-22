@@ -37,6 +37,9 @@ the `src/` directory. To build Prototype, you'll need:
 * Ruby 1.8.2 or higher (<http://www.ruby-lang.org/>)
 * Rake--Ruby Make (<http://rake.rubyforge.org/>)
 * RDoc, if your Ruby distribution does not include it
+* Sprockets 1.0.2 (Prototype cannot be built with Sprockets 2.X):
+    - `gem uninstall sprockets` if you have Sprockets 2.X already installed,
+    - `gem install sprockets --version 1.0.2`
 
 From the root Prototype directory,
 
