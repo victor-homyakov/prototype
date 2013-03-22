@@ -2369,7 +2369,7 @@
       name = table.names[attr] || attr;
       value = attributes[attr];
       if (table.values[attr])
-        name = table.values[attr](element, value) || name;
+        table.values[attr](element, value);
       if (value === false || value === null)
         element.removeAttribute(name);
       else if (value === true)
@@ -2413,7 +2413,7 @@
    *
    *  **Deprecated**, please see [[Element.addClassName]],
    *  [[Element.removeClassName]], and [[Element.hasClassName]]. If you want
-   *  an array of classnames, you can use `$w(element.className)`.
+   *  an array of class names, you can use `$w(element.className)`.
   **/
   function classNames(element) {
     return $w($(element).className);
@@ -2898,7 +2898,9 @@
 
   function getStyle_Opera(element, style) {
     switch (style) {
-      case 'height': case 'width':
+      case 'height':
+        // fall-through
+      case 'width':
         // returns '0px' for hidden elements; we want it to return null
         if (!Element.visible(element)) return null;
 
@@ -3325,7 +3327,7 @@
    *        // myOwnMethod: Do something cool with the element
    *        myOwnMethod: function(element) {
    *          if (!(element = $(element))) return;
-   *          // ...do smething with 'element'...
+   *          // ...do something with 'element'...
    *          return element;
    *        },
    *
@@ -3440,13 +3442,11 @@
 
     if (!tagName) {
       Object.extend(Element.Methods, methods || {});
+    } else if (Object.isArray(tagName)) {
+      for (var i = 0, tag; tag = tagName[i]; i++)
+        addMethodsToTagName(tag, methods);
     } else {
-      if (Object.isArray(tagName)) {
-        for (var i = 0, tag; tag = tagName[i]; i++)
-          addMethodsToTagName(tag, methods);
-      } else {
-        addMethodsToTagName(tagName, methods);
-      }
+      addMethodsToTagName(tagName, methods);
     }
 
     var ELEMENT_PROTOTYPE = window.HTMLElement ? HTMLElement.prototype :
