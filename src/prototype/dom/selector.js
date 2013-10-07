@@ -92,11 +92,11 @@ window.$$ = function() {
  * Prototype.Selector
  *
  * A namespace that acts as a wrapper around
- * the choosen selector engine (Sizzle by default).
+ * the chosen selector engine (Sizzle by default).
  *
 **/
 Prototype.Selector = (function() {
-  
+
   /**
    *  Prototype.Selector.select(expression[, root = document]) -> [Element...]
    *  - expression (String): A CSS selector.
