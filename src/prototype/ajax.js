@@ -27,7 +27,7 @@
  *    `<%= PROTOTYPE_VERSION %>`).
  *  * `Accept` is set to `text/javascript, text/html, application/xml,
  *     text/xml, * / *`
- *  * `Content-type` is automatically determined based on the `contentType`
+ *  * `Content-Type` is automatically determined based on the `contentType`
  *    and `encoding` options.
  *
  *  ##### Ajax options
@@ -43,7 +43,7 @@
  *    **strongly discouraged** &mdash; it halts all script execution for the
  *    duration of the request _and_ blocks the browser UI.
  *  * `contentType` ([[String]]; default `application/x-www-form-urlencoded`):
- *    The `Content-type` header for your request. Change this header if you
+ *    The `Content-Type` header for your request. Change this header if you
  *    want to send data in another format (like XML).
  *  * `encoding` ([[String]]; default `UTF-8`): The encoding for the contents
  *    of your request. It is best left as-is, but should weird encoding issues
@@ -63,11 +63,18 @@
  *  * `requestHeaders` ([[Object]]): A set of key-value pairs, with properties
  *    representing header names.
  *  * `evalJS` ([[Boolean]] | [[String]]; default `true`): Automatically `eval`s
+ *    the content of [[Ajax.Response#responseText]] if the `Content-Type` returned
+ *    by the server is set to one of `text/javascript`, `application/ecmascript`
+ *    (matches expression `(text|application)\/(x-)?(java|ecma)script`).
+ *    If the request doesn't obey same-origin policy, the content is not evaluated.
+ *    If you need to force evaluation, pass `'force'`. To prevent it altogether,
+ *    pass `false`.
+ *  * `evalJSON` ([[Boolean]] | [[String]]; default `true`): Automatically `eval`s
  *    the content of [[Ajax.Response#responseText]] and populates
- *    [[Ajax.Response#responseJSON]] with it if the `Content-type` returned by
+ *    [[Ajax.Response#responseJSON]] with it if the `Content-Type` returned by
  *    the server is set to `application/json`. If the request doesn't obey
  *    same-origin policy, the content is sanitized before evaluation. If you
- *    need to force evalutation, pass `'force'`. To prevent it altogether, pass
+ *    need to force evaluation, pass `'force'`. To prevent it altogether, pass
  *    `false`.
  *  * `sanitizeJSON` ([[Boolean]]; default is `false` for same-origin requests,
  *    `true` otherwise): Sanitizes the contents of
