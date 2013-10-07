@@ -221,7 +221,7 @@ var Enumerable = (function() {
     iterator = iterator || Prototype.K;
     var result = true;
     this.each(function(value, index) {
-      result = result && !!iterator.call(context, value, index, this);
+      result = !!iterator.call(context, value, index, this);
       if (!result) throw $break;
     }, this);
     return result;
