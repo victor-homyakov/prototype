@@ -5,3 +5,4 @@ doc
 tmp
 *.pdoc.yaml
 .idea
+node_modules
