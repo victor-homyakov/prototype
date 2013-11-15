@@ -857,9 +857,11 @@ Object.extend(String.prototype, (function() {
     sub:            sub,
     scan:           scan,
     truncate:       truncate,
-    // Firefox 3.5+ supports String.prototype.trim
+    // Firefox 3.5+, Safari 5+, Opera 11+, IE9+ support String.prototype.trim
     // (`trim` is ~ 5x faster than `strip` in FF3.5)
     strip:          String.prototype.trim || strip,
+    // Polyfill for IE8-
+    trim:           String.prototype.trim || strip,
     stripTags:      stripTags,
     stripScripts:   stripScripts,
     extractScripts: extractScripts,
