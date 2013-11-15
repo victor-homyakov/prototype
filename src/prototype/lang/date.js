@@ -17,11 +17,11 @@
    *
    *      var d = new Date(1969, 11, 31, 19);
    *      d.getTimezoneOffset();
-   *      //-> -180 (time offest is given in minutes.)
+   *      //-> -180 (time offset is given in minutes.)
    *      d.toISOString();
    *      //-> '1969-12-31T16:00:00Z'
   **/
-  
+
   function toISOString() {
     return this.getUTCFullYear() + '-' +
       (this.getUTCMonth() + 1).toPaddedString(2) + '-' +
@@ -40,7 +40,7 @@
    *
    *      var d = new Date(1969, 11, 31, 19);
    *      d.getTimezoneOffset();
-   *      //-> -180 (time offest is given in minutes.)
+   *      //-> -180 (time offset is given in minutes.)
    *      d.toJSON();
    *      //-> '1969-12-31T16:00:00Z'
   **/
@@ -48,9 +48,14 @@
   function toJSON() {
     return this.toISOString();
   }
-  
+
   if (!proto.toISOString) proto.toISOString = toISOString;
   if (!proto.toJSON) proto.toJSON = toJSON;
-  
+
 })(Date.prototype);
 
+if (!Date.now) {
+  Date.now = function() {
+    return +new Date();
+  };
+}
